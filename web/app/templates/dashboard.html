@@ -58,7 +58,7 @@
           <tbody>
             {% for scan in recent_scans %}
             <tr>
-              <td><a href="/assets/{{ scan.asset_id }}">{{ scan.asset.name }}</a></td>
+              <td>{{ scan.asset.name }}</td>
               <td>{{ scan.profile.name }}</td>
               <td><span class="scan-status-{{ scan.status.value }}">{{ scan.status.value }}</span></td>
               <td>{{ scan.queued_at.strftime('%Y-%m-%d %H:%M') }}</td>

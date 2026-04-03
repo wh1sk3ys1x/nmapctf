@@ -11,13 +11,13 @@ router = APIRouter(prefix="/profiles", tags=["views"])
 def list_profiles(request: Request, db: DbSession):
     from app.main import templates
     profiles = db.query(ScanProfile).order_by(ScanProfile.name).all()
-    return templates.TemplateResponse("profiles/list.html", {"request": request, "profiles": profiles})
+    return templates.TemplateResponse(request, "profiles/list.html", {"profiles": profiles})
 
 
 @router.get("/new", response_class=HTMLResponse)
 def new_profile(request: Request):
     from app.main import templates
-    return templates.TemplateResponse("profiles/form.html", {"request": request, "profile": None})
+    return templates.TemplateResponse(request, "profiles/form.html", {"profile": None})
 
 
 @router.get("/{profile_id}/edit", response_class=HTMLResponse)
@@ -26,7 +26,7 @@ def edit_profile(profile_id: int, request: Request, db: DbSession):
     profile = db.get(ScanProfile, profile_id)
     if not profile:
         return RedirectResponse("/profiles", status_code=303)
-    return templates.TemplateResponse("profiles/form.html", {"request": request, "profile": profile})
+    return templates.TemplateResponse(request, "profiles/form.html", {"profile": profile})
 
 
 @router.post("/", response_class=HTMLResponse)

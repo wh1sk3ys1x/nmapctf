@@ -37,9 +37,9 @@ def dashboard(request: Request, db: DbSession):
     )
 
     return templates.TemplateResponse(
+        request,
         "dashboard.html",
         {
-            "request": request,
             "total_assets": total_assets,
             "total_scans": total_scans,
             "running_scans": running_scans,

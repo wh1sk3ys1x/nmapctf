@@ -11,7 +11,7 @@ router = APIRouter(prefix="/schedules", tags=["views"])
 def list_schedules(request: Request, db: DbSession):
     from app.main import templates
     schedules = db.query(Schedule).order_by(Schedule.name).all()
-    return templates.TemplateResponse("schedules/list.html", {"request": request, "schedules": schedules})
+    return templates.TemplateResponse(request, "schedules/list.html", {"schedules": schedules})
 
 
 @router.get("/new", response_class=HTMLResponse)
@@ -20,8 +20,8 @@ def new_schedule(request: Request, db: DbSession):
     assets = db.query(Asset).order_by(Asset.name).all()
     profiles = db.query(ScanProfile).order_by(ScanProfile.name).all()
     return templates.TemplateResponse(
-        "schedules/form.html",
-        {"request": request, "schedule": None, "assets": assets, "profiles": profiles},
+        request, "schedules/form.html",
+        {"schedule": None, "assets": assets, "profiles": profiles},
     )
 
 
@@ -34,8 +34,8 @@ def edit_schedule(schedule_id: int, request: Request, db: DbSession):
     assets = db.query(Asset).order_by(Asset.name).all()
     profiles = db.query(ScanProfile).order_by(ScanProfile.name).all()
     return templates.TemplateResponse(
-        "schedules/form.html",
-        {"request": request, "schedule": schedule, "assets": assets, "profiles": profiles},
+        request, "schedules/form.html",
+        {"schedule": schedule, "assets": assets, "profiles": profiles},
     )
 
 

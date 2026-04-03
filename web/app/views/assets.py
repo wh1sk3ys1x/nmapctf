@@ -11,15 +11,14 @@ router = APIRouter(prefix="/assets", tags=["views"])
 def list_assets(request: Request, db: DbSession):
     from app.main import templates
     assets = db.query(Asset).order_by(Asset.name).all()
-    return templates.TemplateResponse("assets/list.html", {"request": request, "assets": assets})
+    return templates.TemplateResponse(request, "assets/list.html", {"assets": assets})
 
 
 @router.get("/new", response_class=HTMLResponse)
 def new_asset(request: Request):
     from app.main import templates
     return templates.TemplateResponse(
-        "assets/form.html",
-        {"request": request, "asset": None, "asset_types": list(AssetType)},
+        request, "assets/form.html", {"asset": None, "asset_types": list(AssetType)},
     )
 
 
@@ -30,8 +29,7 @@ def edit_asset(asset_id: int, request: Request, db: DbSession):
     if not asset:
         return RedirectResponse("/assets", status_code=303)
     return templates.TemplateResponse(
-        "assets/form.html",
-        {"request": request, "asset": asset, "asset_types": list(AssetType)},
+        request, "assets/form.html", {"asset": asset, "asset_types": list(AssetType)},
     )
 
 

@@ -35,9 +35,8 @@ def scan_history(
     statuses = [s.value for s in ScanStatus]
 
     return templates.TemplateResponse(
-        "scans/history.html",
+        request, "scans/history.html",
         {
-            "request": request,
             "scans": scans,
             "assets": assets,
             "statuses": statuses,
@@ -53,8 +52,7 @@ def run_scan_form(request: Request, db: DbSession):
     assets = db.query(Asset).order_by(Asset.name).all()
     profiles = db.query(ScanProfile).order_by(ScanProfile.name).all()
     return templates.TemplateResponse(
-        "scans/run.html",
-        {"request": request, "assets": assets, "profiles": profiles},
+        request, "scans/run.html", {"assets": assets, "profiles": profiles},
     )
 
 
@@ -93,8 +91,7 @@ def scan_detail(scan_id: str, request: Request, db: DbSession):
     if not scan:
         return RedirectResponse("/scans", status_code=303)
     return templates.TemplateResponse(
-        "scans/detail.html",
-        {"request": request, "scan": scan},
+        request, "scans/detail.html", {"scan": scan},
     )
 
 
@@ -106,6 +103,5 @@ def scan_status_partial(scan_id: str, db: DbSession, request: Request):
     if not scan:
         return HTMLResponse("")
     return templates.TemplateResponse(
-        "partials/scan_status.html",
-        {"request": request, "scan": scan},
+        request, "partials/scan_status.html", {"scan": scan},
     )
