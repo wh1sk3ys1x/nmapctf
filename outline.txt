@@ -1,0 +1,8 @@
+Nmap Continuous Testing Platform
+
+Nmap scans of assets.
+    Ping and Port scan.
+
+Keep track of test results and ability to put them into a report. 
+
+Must be packaged as a docker container. 
