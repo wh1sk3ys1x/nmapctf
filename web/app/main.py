@@ -36,8 +36,6 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="nmapctf", version="0.1.0", lifespan=lifespan)
 
-app.add_middleware(SessionMiddleware, secret_key=settings.secret_key)
-
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
 templates.env.globals["get_flashed_messages"] = lambda: []
@@ -47,6 +45,8 @@ PUBLIC_PATHS = {"/login", "/setup", "/api/v1/health", "/api/v1/auth/token"}
 PUBLIC_PREFIXES = ("/static/", "/api/v1/internal/")
 
 
+# NOTE: @app.middleware("http") must be registered BEFORE SessionMiddleware
+# so that SessionMiddleware wraps it (outermost) and the session is available.
 @app.middleware("http")
 async def require_login(request: Request, call_next):
     path = request.url.path
@@ -69,6 +69,9 @@ async def require_login(request: Request, call_next):
         return RedirectResponse("/login", status_code=303)
     return await call_next(request)
 
+
+# SessionMiddleware must be added AFTER @app.middleware("http") so it is outermost
+app.add_middleware(SessionMiddleware, secret_key=settings.secret_key)
 
 # API routers
 app.include_router(api_auth.router, prefix="/api/v1")
