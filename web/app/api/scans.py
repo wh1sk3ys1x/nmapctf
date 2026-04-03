@@ -1,10 +1,18 @@
 from fastapi import APIRouter, HTTPException
+from redis import Redis
+from rq import Queue
 
 from app.api.deps import DbSession
+from app.config import settings
 from app.models import ScanJob, Asset, ScanProfile
 from app.schemas.scan import ScanCreate, ScanOut, ScanDetailOut
 
 router = APIRouter(prefix="/scans", tags=["scans"])
+
+
+def _get_queue() -> Queue:
+    conn = Redis.from_url(settings.redis_url)
+    return Queue("scans", connection=conn)
 
 
 @router.get("/", response_model=list[ScanOut])
@@ -27,9 +35,11 @@ def get_scan(scan_id: str, db: DbSession):
 
 @router.post("/", response_model=ScanOut, status_code=201)
 def create_scan(body: ScanCreate, db: DbSession):
-    if not db.get(Asset, body.asset_id):
+    asset = db.get(Asset, body.asset_id)
+    if not asset:
         raise HTTPException(404, "Asset not found")
-    if not db.get(ScanProfile, body.profile_id):
+    profile = db.get(ScanProfile, body.profile_id)
+    if not profile:
         raise HTTPException(404, "Profile not found")
 
     job = ScanJob(asset_id=body.asset_id, profile_id=body.profile_id)
@@ -37,6 +47,14 @@ def create_scan(body: ScanCreate, db: DbSession):
     db.commit()
     db.refresh(job)
 
-    # TODO: enqueue job to Redis once scanner integration is wired up
+    # Enqueue the scan job for the scanner worker
+    queue = _get_queue()
+    queue.enqueue(
+        "tasks.run_scan",
+        job_id=job.id,
+        target=asset.address,
+        nmap_args=profile.nmap_args,
+        job_timeout="30m",
+    )
 
     return job

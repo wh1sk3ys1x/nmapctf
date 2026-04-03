@@ -4,7 +4,7 @@ from fastapi import FastAPI
 
 from app.database import Base, engine, SessionLocal
 from app.seed import seed_default_profiles
-from app.api import assets, profiles, scans, schedules
+from app.api import assets, profiles, scans, schedules, internal
 
 
 @asynccontextmanager
@@ -25,6 +25,7 @@ app.include_router(assets.router, prefix="/api/v1")
 app.include_router(profiles.router, prefix="/api/v1")
 app.include_router(scans.router, prefix="/api/v1")
 app.include_router(schedules.router, prefix="/api/v1")
+app.include_router(internal.router, prefix="/api/v1")
 
 
 @app.get("/api/v1/health")
