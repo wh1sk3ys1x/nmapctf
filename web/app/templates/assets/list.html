@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Assets — nmapctf{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1>Assets</h1>
+  <a href="/assets/new" class="btn btn-primary">Add Asset</a>
+</div>
+
+<table class="table table-hover">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Address</th>
+      <th>Notes</th>
+      <th style="width: 120px;">Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for asset in assets %}
+    <tr id="asset-{{ asset.id }}">
+      <td>{{ asset.name }}</td>
+      <td><span class="badge bg-secondary">{{ asset.type.value }}</span></td>
+      <td><code>{{ asset.address }}</code></td>
+      <td>{{ asset.notes or '' }}</td>
+      <td>
+        <a href="/assets/{{ asset.id }}/edit" class="btn btn-sm btn-outline-light">Edit</a>
+        <button class="btn btn-sm btn-outline-danger"
+                hx-delete="/assets/{{ asset.id }}"
+                hx-target="#asset-{{ asset.id }}"
+                hx-swap="outerHTML"
+                hx-confirm="Delete asset '{{ asset.name }}'?">Del</button>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5" class="text-muted text-center">No assets yet. <a href="/assets/new">Add one.</a></td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
