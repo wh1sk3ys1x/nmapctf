@@ -1,0 +1,4 @@
+redis==5.2.1
+rq==1.16.2
+python-nmap==0.7.1
+httpx==0.28.1

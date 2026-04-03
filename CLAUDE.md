@@ -14,6 +14,11 @@ Nmap Continuous Testing Framework (nmapctf) — a platform for running scheduled
 - Generate reports from scan results
 - Deployable as a Docker container
 
+## Workflow
+
+- Commit all changes after each completed step. Do not batch multiple steps into one commit.
+- Keep documentation (design spec, CLAUDE.md, README, etc.) updated as changes are made. Documentation updates should be part of the same commit as the related code changes.
+
 ## Git
 
 - Do not add Claude authorship (Co-Authored-By) to git commits.

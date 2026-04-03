@@ -1,0 +1,32 @@
+import enum
+from datetime import datetime, timezone
+
+from sqlalchemy import String, Text, Enum
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.database import Base
+
+
+class AssetType(str, enum.Enum):
+    host = "host"
+    ip = "ip"
+    subnet = "subnet"
+    range = "range"
+
+
+class Asset(Base):
+    __tablename__ = "assets"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    type: Mapped[AssetType] = mapped_column(Enum(AssetType))
+    address: Mapped[str] = mapped_column(String(255))
+    notes: Mapped[str | None] = mapped_column(Text, default=None)
+    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    scan_jobs: Mapped[list["ScanJob"]] = relationship(back_populates="asset")  # noqa: F821
+    schedules: Mapped[list["Schedule"]] = relationship(back_populates="asset")  # noqa: F821

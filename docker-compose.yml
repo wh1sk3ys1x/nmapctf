@@ -1,0 +1,43 @@
+services:
+  web:
+    build: ./web
+    ports:
+      - "8080:8080"
+    volumes:
+      - db-data:/app/data
+      - report-data:/app/reports
+    environment:
+      - DATABASE_URL=sqlite:////app/data/nmapctf.db
+      - REDIS_URL=redis://redis:6379/0
+      - SCANNER_API_TOKEN=${SCANNER_API_TOKEN:-changeme}
+      - SECRET_KEY=${SECRET_KEY:-changeme-in-production}
+    depends_on:
+      - redis
+    networks:
+      - internal
+
+  scanner:
+    build: ./scanner
+    cap_add:
+      - NET_RAW
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - WEB_API_URL=http://web:8080/api/v1
+      - SCANNER_API_TOKEN=${SCANNER_API_TOKEN:-changeme}
+    depends_on:
+      - redis
+      - web
+    networks:
+      - internal
+
+  redis:
+    image: redis:7-alpine
+    networks:
+      - internal
+
+volumes:
+  db-data:
+  report-data:
+
+networks:
+  internal:
