@@ -10,6 +10,7 @@ from app.seed import seed_default_profiles
 from app.api import assets, profiles, scans, schedules, internal
 from app.views import dashboard as dashboard_views
 from app.views import assets as asset_views
+from app.views import profiles as profile_views
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -40,6 +41,7 @@ app.include_router(internal.router, prefix="/api/v1")
 
 app.include_router(dashboard_views.router)
 app.include_router(asset_views.router)
+app.include_router(profile_views.router)
 
 
 @app.get("/api/v1/health")

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Scan Profiles — nmapctf{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1>Scan Profiles</h1>
+  <a href="/profiles/new" class="btn btn-primary">Add Profile</a>
+</div>
+
+<table class="table table-hover">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Arguments</th>
+      <th>Description</th>
+      <th style="width: 120px;">Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for profile in profiles %}
+    <tr id="profile-{{ profile.id }}">
+      <td>
+        {{ profile.name }}
+        {% if profile.is_default %}<span class="badge bg-info ms-1">default</span>{% endif %}
+      </td>
+      <td><code>{{ profile.nmap_args }}</code></td>
+      <td>{{ profile.description or '' }}</td>
+      <td>
+        {% if not profile.is_default %}
+        <a href="/profiles/{{ profile.id }}/edit" class="btn btn-sm btn-outline-light">Edit</a>
+        <button class="btn btn-sm btn-outline-danger"
+                hx-delete="/profiles/{{ profile.id }}"
+                hx-target="#profile-{{ profile.id }}"
+                hx-swap="outerHTML"
+                hx-confirm="Delete profile '{{ profile.name }}'?">Del</button>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
