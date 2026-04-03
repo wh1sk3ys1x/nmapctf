@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Run Scan — nmapctf{% endblock %}
+{% block content %}
+<h1>Run Scan</h1>
+
+<form method="post" action="/scans/run" class="mt-3" style="max-width: 600px;">
+  <div class="mb-3">
+    <label for="asset_id" class="form-label">Target Asset</label>
+    <select class="form-select" id="asset_id" name="asset_id" required>
+      <option value="">Select asset...</option>
+      {% for asset in assets %}
+      <option value="{{ asset.id }}">{{ asset.name }} ({{ asset.address }})</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="mb-3">
+    <label for="profile_id" class="form-label">Scan Profile</label>
+    <select class="form-select" id="profile_id" name="profile_id" required>
+      <option value="">Select profile...</option>
+      {% for profile in profiles %}
+      <option value="{{ profile.id }}">{{ profile.name }} — {{ profile.nmap_args }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button type="submit" class="btn btn-primary">Start Scan</button>
+</form>
+{% endblock %}

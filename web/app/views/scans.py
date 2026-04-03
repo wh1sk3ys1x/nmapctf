@@ -1,0 +1,111 @@
+from fastapi import APIRouter, Request, Form
+from fastapi.responses import HTMLResponse, RedirectResponse
+from redis import Redis
+from rq import Queue
+
+from app.api.deps import DbSession
+from app.config import settings
+from app.models import ScanJob, Asset, ScanProfile, ScanStatus
+
+router = APIRouter(prefix="/scans", tags=["views"])
+
+
+def _get_queue() -> Queue:
+    conn = Redis.from_url(settings.redis_url)
+    return Queue("scans", connection=conn)
+
+
+@router.get("/", response_class=HTMLResponse)
+def scan_history(
+    request: Request,
+    db: DbSession,
+    status: str | None = None,
+    asset_id: int | None = None,
+):
+    from app.main import templates
+
+    query = db.query(ScanJob)
+    if status:
+        query = query.filter(ScanJob.status == status)
+    if asset_id:
+        query = query.filter(ScanJob.asset_id == asset_id)
+    scans = query.order_by(ScanJob.queued_at.desc()).limit(100).all()
+
+    assets = db.query(Asset).order_by(Asset.name).all()
+    statuses = [s.value for s in ScanStatus]
+
+    return templates.TemplateResponse(
+        "scans/history.html",
+        {
+            "request": request,
+            "scans": scans,
+            "assets": assets,
+            "statuses": statuses,
+            "filter_status": status,
+            "filter_asset_id": asset_id,
+        },
+    )
+
+
+@router.get("/run", response_class=HTMLResponse)
+def run_scan_form(request: Request, db: DbSession):
+    from app.main import templates
+    assets = db.query(Asset).order_by(Asset.name).all()
+    profiles = db.query(ScanProfile).order_by(ScanProfile.name).all()
+    return templates.TemplateResponse(
+        "scans/run.html",
+        {"request": request, "assets": assets, "profiles": profiles},
+    )
+
+
+@router.post("/run", response_class=HTMLResponse)
+def run_scan(
+    db: DbSession,
+    asset_id: int = Form(...),
+    profile_id: int = Form(...),
+):
+    asset = db.get(Asset, asset_id)
+    profile = db.get(ScanProfile, profile_id)
+    if not asset or not profile:
+        return RedirectResponse("/scans/run", status_code=303)
+
+    job = ScanJob(asset_id=asset_id, profile_id=profile_id)
+    db.add(job)
+    db.commit()
+    db.refresh(job)
+
+    queue = _get_queue()
+    queue.enqueue(
+        "tasks.run_scan",
+        job_id=job.id,
+        target=asset.address,
+        nmap_args=profile.nmap_args,
+        job_timeout="30m",
+    )
+
+    return RedirectResponse(f"/scans/{job.id}", status_code=303)
+
+
+@router.get("/{scan_id}", response_class=HTMLResponse)
+def scan_detail(scan_id: str, request: Request, db: DbSession):
+    from app.main import templates
+    scan = db.get(ScanJob, scan_id)
+    if not scan:
+        return RedirectResponse("/scans", status_code=303)
+    return templates.TemplateResponse(
+        "scans/detail.html",
+        {"request": request, "scan": scan},
+    )
+
+
+@router.get("/{scan_id}/status", response_class=HTMLResponse)
+def scan_status_partial(scan_id: str, db: DbSession, request: Request):
+    """HTMX endpoint for polling scan status."""
+    from app.main import templates
+    scan = db.get(ScanJob, scan_id)
+    if not scan:
+        return HTMLResponse("")
+    return templates.TemplateResponse(
+        "partials/scan_status.html",
+        {"request": request, "scan": scan},
+    )

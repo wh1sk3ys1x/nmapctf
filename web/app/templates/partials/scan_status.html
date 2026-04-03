@@ -1,0 +1,9 @@
+<span id="scan-status-badge"
+      class="scan-status-{{ scan.status.value }}"
+      {% if scan.status.value in ('pending', 'running') %}
+      hx-get="/scans/{{ scan.id }}/status"
+      hx-trigger="every 3s"
+      hx-swap="outerHTML"
+      {% endif %}>
+  {{ scan.status.value }}
+</span>

@@ -12,6 +12,7 @@ from app.views import dashboard as dashboard_views
 from app.views import assets as asset_views
 from app.views import profiles as profile_views
 from app.views import schedules as schedule_views
+from app.views import scans as scan_views
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -44,6 +45,7 @@ app.include_router(dashboard_views.router)
 app.include_router(asset_views.router)
 app.include_router(profile_views.router)
 app.include_router(schedule_views.router)
+app.include_router(scan_views.router)
 
 
 @app.get("/api/v1/health")

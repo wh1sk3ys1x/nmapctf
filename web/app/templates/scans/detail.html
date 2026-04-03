@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Scan Detail — nmapctf{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1>Scan Detail</h1>
+  <a href="/scans" class="btn btn-outline-secondary">Back to History</a>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-3"><strong>Asset:</strong> {{ scan.asset.name }} ({{ scan.asset.address }})</div>
+      <div class="col-md-3"><strong>Profile:</strong> {{ scan.profile.name }}</div>
+      <div class="col-md-3">
+        <strong>Status:</strong>
+        <span id="scan-status-badge"
+              hx-get="/scans/{{ scan.id }}/status"
+              hx-trigger="{{ 'every 3s' if scan.status.value in ('pending', 'running') else 'none' }}"
+              hx-swap="outerHTML">
+          {% include "partials/scan_status.html" %}
+        </span>
+      </div>
+      <div class="col-md-3"><strong>Trigger:</strong> {{ scan.trigger.value }}</div>
+    </div>
+    <div class="row mt-2">
+      <div class="col-md-3"><strong>Queued:</strong> {{ scan.queued_at.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+      <div class="col-md-3"><strong>Started:</strong> {{ scan.started_at.strftime('%Y-%m-%d %H:%M:%S') if scan.started_at else '—' }}</div>
+      <div class="col-md-3"><strong>Completed:</strong> {{ scan.completed_at.strftime('%Y-%m-%d %H:%M:%S') if scan.completed_at else '—' }}</div>
+    </div>
+    {% if scan.error_message %}
+    <div class="alert alert-danger mt-3 mb-0">{{ scan.error_message }}</div>
+    {% endif %}
+  </div>
+</div>
+
+{% if scan.results %}
+<div class="card mb-4">
+  <div class="card-header">Results ({{ scan.results | length }} ports found)</div>
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Host</th>
+          <th>Port</th>
+          <th>Protocol</th>
+          <th>State</th>
+          <th>Service</th>
+          <th>Version</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for result in scan.results %}
+        <tr>
+          <td>{{ result.host }}</td>
+          <td>{{ result.port }}</td>
+          <td>{{ result.protocol }}</td>
+          <td>
+            {% if result.state == 'open' %}
+            <span class="badge bg-success">open</span>
+            {% elif result.state == 'filtered' %}
+            <span class="badge bg-warning">filtered</span>
+            {% else %}
+            <span class="badge bg-secondary">{{ result.state }}</span>
+            {% endif %}
+          </td>
+          <td>{{ result.service or '—' }}</td>
+          <td>{{ result.version or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% if scan.raw_xml %}
+<div class="card">
+  <div class="card-header">
+    Raw Nmap Output
+    <button class="btn btn-sm btn-outline-light float-end" type="button" data-bs-toggle="collapse" data-bs-target="#rawXml">
+      Toggle
+    </button>
+  </div>
+  <div class="collapse" id="rawXml">
+    <div class="card-body">
+      <pre class="raw-xml"><code>{{ scan.raw_xml }}</code></pre>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

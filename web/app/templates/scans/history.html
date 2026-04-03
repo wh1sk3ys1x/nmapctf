@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Scan History — nmapctf{% endblock %}
+{% block content %}
+<h1 class="mb-4">Scan History</h1>
+
+<form method="get" action="/scans" class="row g-2 mb-3">
+  <div class="col-auto">
+    <select class="form-select form-select-sm" name="status">
+      <option value="">All statuses</option>
+      {% for s in statuses %}
+      <option value="{{ s }}" {{ 'selected' if filter_status == s else '' }}>{{ s }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-auto">
+    <select class="form-select form-select-sm" name="asset_id">
+      <option value="">All assets</option>
+      {% for asset in assets %}
+      <option value="{{ asset.id }}" {{ 'selected' if filter_asset_id == asset.id else '' }}>{{ asset.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-auto">
+    <button type="submit" class="btn btn-sm btn-outline-light">Filter</button>
+  </div>
+</form>
+
+<table class="table table-hover">
+  <thead>
+    <tr>
+      <th>Asset</th>
+      <th>Profile</th>
+      <th>Status</th>
+      <th>Trigger</th>
+      <th>Queued</th>
+      <th>Completed</th>
+      <th>Results</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for scan in scans %}
+    <tr>
+      <td>{{ scan.asset.name }}</td>
+      <td>{{ scan.profile.name }}</td>
+      <td><span class="scan-status-{{ scan.status.value }}">{{ scan.status.value }}</span></td>
+      <td>{{ scan.trigger.value }}</td>
+      <td>{{ scan.queued_at.strftime('%Y-%m-%d %H:%M') }}</td>
+      <td>{{ scan.completed_at.strftime('%Y-%m-%d %H:%M') if scan.completed_at else '—' }}</td>
+      <td><a href="/scans/{{ scan.id }}" class="btn btn-sm btn-outline-light">View</a></td>
+    </tr>
+    {% else %}
+    <tr><td colspan="7" class="text-muted text-center">No scans found.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
