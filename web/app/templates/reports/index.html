@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Reports — nmapctf{% endblock %}
+{% block content %}
+<h1 class="mb-4">Generate Report</h1>
+
+<form method="get" action="/reports/view" class="card" style="max-width: 600px;">
+  <div class="card-body">
+    <div class="mb-3">
+      <label for="scope" class="form-label">Report Scope</label>
+      <select class="form-select" id="scope" name="scope" onchange="toggleFields()">
+        <option value="all">All Assets</option>
+        <option value="asset">Single Asset</option>
+        <option value="scan">Single Scan</option>
+      </select>
+    </div>
+
+    <div class="mb-3" id="asset-field" style="display:none;">
+      <label for="asset_id" class="form-label">Asset</label>
+      <select class="form-select" id="asset_id" name="asset_id">
+        <option value="">Select asset...</option>
+        {% for asset in assets %}
+        <option value="{{ asset.id }}">{{ asset.name }} ({{ asset.address }})</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="mb-3" id="scan-field" style="display:none;">
+      <label for="scan_id" class="form-label">Scan</label>
+      <select class="form-select" id="scan_id" name="scan_id">
+        <option value="">Select scan...</option>
+        {% for scan in scans %}
+        <option value="{{ scan.id }}">{{ scan.asset.name }} — {{ scan.profile.name }} ({{ scan.completed_at.strftime('%Y-%m-%d %H:%M') if scan.completed_at else 'pending' }})</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="row mb-3" id="date-fields">
+      <div class="col">
+        <label for="date_from" class="form-label">From</label>
+        <input type="date" class="form-control" id="date_from" name="date_from">
+      </div>
+      <div class="col">
+        <label for="date_to" class="form-label">To</label>
+        <input type="date" class="form-control" id="date_to" name="date_to">
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary">View Report</button>
+      <button type="submit" class="btn btn-outline-light" formaction="/reports/pdf">Download PDF</button>
+      <button type="submit" class="btn btn-outline-light" formaction="/reports/csv">Download CSV</button>
+      <button type="submit" class="btn btn-outline-light" formaction="/reports/json">Download JSON</button>
+    </div>
+  </div>
+</form>
+
+<script>
+function toggleFields() {
+  const scope = document.getElementById('scope').value;
+  document.getElementById('asset-field').style.display = scope === 'asset' ? '' : 'none';
+  document.getElementById('scan-field').style.display = scope === 'scan' ? '' : 'none';
+  document.getElementById('date-fields').style.display = scope === 'scan' ? 'none' : '';
+}
+</script>
+{% endblock %}

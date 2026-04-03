@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{{ report.title }} — nmapctf</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 2rem; color: #212529; background: #fff; }
+    h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+    .meta { color: #6c757d; margin-bottom: 1.5rem; font-size: 0.9rem; }
+    .summary { display: flex; gap: 2rem; margin-bottom: 1.5rem; }
+    .summary .stat { text-align: center; }
+    .summary .stat .value { font-size: 1.5rem; font-weight: bold; }
+    .summary .stat .label { font-size: 0.8rem; color: #6c757d; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; font-size: 0.85rem; }
+    th, td { border: 1px solid #dee2e6; padding: 0.4rem 0.6rem; text-align: left; }
+    th { background: #f8f9fa; font-weight: 600; }
+    .open { color: #198754; font-weight: bold; }
+    .filtered { color: #fd7e14; }
+    .closed { color: #6c757d; }
+    .actions { margin-bottom: 1.5rem; }
+    .actions a { margin-right: 0.5rem; color: #0d6efd; text-decoration: none; }
+    @media print { .actions { display: none; } }
+  </style>
+</head>
+<body>
+  <h1>{{ report.title }}</h1>
+  <div class="meta">Generated: {{ report.generated_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}</div>
+
+  <div class="actions">
+    <a href="/reports/">New Report</a>
+    <a href="/reports/pdf?scope={{ scope }}{% if scan_id %}&scan_id={{ scan_id }}{% endif %}{% if asset_id %}&asset_id={{ asset_id }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}">Download PDF</a>
+    <a href="/reports/csv?scope={{ scope }}{% if scan_id %}&scan_id={{ scan_id }}{% endif %}{% if asset_id %}&asset_id={{ asset_id }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}">Download CSV</a>
+    <a href="/reports/json?scope={{ scope }}{% if scan_id %}&scan_id={{ scan_id }}{% endif %}{% if asset_id %}&asset_id={{ asset_id }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}">Download JSON</a>
+  </div>
+
+  <div class="summary">
+    {% for key, value in report.summary.items() %}
+    <div class="stat">
+      <div class="value">{{ value }}</div>
+      <div class="label">{{ key.replace('_', ' ').title() }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if report.scans %}
+  <h2 style="font-size: 1.2rem;">Scans ({{ report.scans | length }})</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Asset</th>
+        <th>Profile</th>
+        <th>Status</th>
+        <th>Completed</th>
+        <th>Ports Found</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for scan in report.scans %}
+      <tr>
+        <td>{{ scan.asset.name }}</td>
+        <td>{{ scan.profile.name }}</td>
+        <td>{{ scan.status.value }}</td>
+        <td>{{ scan.completed_at.strftime('%Y-%m-%d %H:%M') if scan.completed_at else '—' }}</td>
+        <td>{{ scan.results | length }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  {% if report.results %}
+  <h2 style="font-size: 1.2rem;">Results ({{ report.results | length }} ports)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Host</th>
+        <th>Port</th>
+        <th>Protocol</th>
+        <th>State</th>
+        <th>Service</th>
+        <th>Version</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in report.results %}
+      <tr>
+        <td>{{ r.host }}</td>
+        <td>{{ r.port }}</td>
+        <td>{{ r.protocol }}</td>
+        <td class="{{ r.state }}">{{ r.state }}</td>
+        <td>{{ r.service or '—' }}</td>
+        <td>{{ r.version or '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="color: #6c757d;">No results found for the selected criteria.</p>
+  {% endif %}
+</body>
+</html>
