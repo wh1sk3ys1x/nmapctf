@@ -21,6 +21,7 @@ from app.views import scans as scan_views
 from app.views import auth as auth_views
 from app.views import reports as report_views
 from app.views import groups as group_views
+from app.views import orgs as org_views
 from app.views import import_assets as import_views
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -96,6 +97,7 @@ app.include_router(schedule_views.router)
 app.include_router(scan_views.router)
 app.include_router(report_views.router)
 app.include_router(group_views.router)
+app.include_router(org_views.router)
 
 
 @app.get("/api/v1/health")

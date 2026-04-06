@@ -6,12 +6,12 @@
     <h1>{{ group.name }}</h1>
     {% if group.description %}<p class="text-muted">{{ group.description }}</p>{% endif %}
   </div>
-  <a href="/groups/{{ group.id }}/edit" class="btn btn-outline-light">Edit Group</a>
+  {% if can_edit %}<a href="/groups/{{ group.id }}/edit" class="btn btn-outline-light">Edit Group</a>{% endif %}
 </div>
 
 <h3>Members <span class="badge bg-info">{{ group.assets | length }}</span></h3>
 
-{% if available_assets %}
+{% if can_edit and available_assets %}
 <form method="post" action="/groups/{{ group.id }}/members" class="mb-3 d-flex gap-2" style="max-width: 400px;">
   <select class="form-select" name="asset_id" required>
     <option value="">Add asset...</option>
@@ -29,7 +29,7 @@
       <th>Name</th>
       <th>Type</th>
       <th>Address</th>
-      <th style="width: 100px;">Actions</th>
+      {% if can_edit %}<th style="width: 100px;">Actions</th>{% endif %}
     </tr>
   </thead>
   <tbody>
@@ -38,6 +38,7 @@
       <td>{{ asset.name }}</td>
       <td><span class="badge bg-secondary">{{ asset.type.value }}</span></td>
       <td><code>{{ asset.address }}</code></td>
+      {% if can_edit %}
       <td>
         <button class="btn btn-sm btn-outline-danger"
                 hx-delete="/groups/{{ group.id }}/members/{{ asset.id }}"
@@ -45,6 +46,7 @@
                 hx-swap="outerHTML"
                 hx-confirm="Remove '{{ asset.name }}' from group?">Remove</button>
       </td>
+      {% endif %}
     </tr>
     {% else %}
     <tr><td colspan="4" class="text-muted text-center">No members yet. Add assets above.</td></tr>

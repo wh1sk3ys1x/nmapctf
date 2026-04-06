@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 
 from app.api.deps import DbSession
 from app.models import Schedule, Asset, ScanProfile, AssetGroup
+from app.org_scope import org_filter, get_org_id, can_edit
 
 router = APIRouter(prefix="/schedules", tags=["views"])
 
@@ -10,16 +11,18 @@ router = APIRouter(prefix="/schedules", tags=["views"])
 @router.get("/", response_class=HTMLResponse)
 def list_schedules(request: Request, db: DbSession):
     from app.main import templates
-    schedules = db.query(Schedule).order_by(Schedule.name).all()
+    schedules = org_filter(db.query(Schedule), Schedule, request).order_by(Schedule.name).all()
     return templates.TemplateResponse(request, "schedules/list.html", {"schedules": schedules})
 
 
 @router.get("/new", response_class=HTMLResponse)
 def new_schedule(request: Request, db: DbSession):
+    if not can_edit(request):
+        return RedirectResponse("/schedules", status_code=303)
     from app.main import templates
-    assets = db.query(Asset).order_by(Asset.name).all()
+    assets = org_filter(db.query(Asset), Asset, request).order_by(Asset.name).all()
     profiles = db.query(ScanProfile).order_by(ScanProfile.name).all()
-    groups = db.query(AssetGroup).order_by(AssetGroup.name).all()
+    groups = org_filter(db.query(AssetGroup), AssetGroup, request).order_by(AssetGroup.name).all()
     return templates.TemplateResponse(
         request, "schedules/form.html",
         {"schedule": None, "assets": assets, "profiles": profiles, "groups": groups},
@@ -28,13 +31,15 @@ def new_schedule(request: Request, db: DbSession):
 
 @router.get("/{schedule_id}/edit", response_class=HTMLResponse)
 def edit_schedule(schedule_id: int, request: Request, db: DbSession):
+    if not can_edit(request):
+        return RedirectResponse("/schedules", status_code=303)
     from app.main import templates
     schedule = db.get(Schedule, schedule_id)
     if not schedule:
         return RedirectResponse("/schedules", status_code=303)
-    assets = db.query(Asset).order_by(Asset.name).all()
+    assets = org_filter(db.query(Asset), Asset, request).order_by(Asset.name).all()
     profiles = db.query(ScanProfile).order_by(ScanProfile.name).all()
-    groups = db.query(AssetGroup).order_by(AssetGroup.name).all()
+    groups = org_filter(db.query(AssetGroup), AssetGroup, request).order_by(AssetGroup.name).all()
     return templates.TemplateResponse(
         request, "schedules/form.html",
         {"schedule": schedule, "assets": assets, "profiles": profiles, "groups": groups},
@@ -43,6 +48,7 @@ def edit_schedule(schedule_id: int, request: Request, db: DbSession):
 
 @router.post("/", response_class=HTMLResponse)
 def create_schedule(
+    request: Request,
     db: DbSession,
     name: str = Form(...),
     asset_id: int | None = Form(None),
@@ -50,12 +56,15 @@ def create_schedule(
     profile_id: int = Form(...),
     cron_expression: str = Form(...),
 ):
+    if not can_edit(request):
+        return RedirectResponse("/schedules", status_code=303)
     schedule = Schedule(
         name=name,
         asset_id=asset_id or None,
         asset_group_id=asset_group_id or None,
         profile_id=profile_id,
         cron_expression=cron_expression,
+        org_id=get_org_id(request),
     )
     db.add(schedule)
     db.commit()
@@ -65,6 +74,7 @@ def create_schedule(
 @router.post("/{schedule_id}", response_class=HTMLResponse)
 def update_schedule(
     schedule_id: int,
+    request: Request,
     db: DbSession,
     name: str = Form(...),
     asset_id: int | None = Form(None),
@@ -72,6 +82,8 @@ def update_schedule(
     profile_id: int = Form(...),
     cron_expression: str = Form(...),
 ):
+    if not can_edit(request):
+        return RedirectResponse("/schedules", status_code=303)
     schedule = db.get(Schedule, schedule_id)
     if not schedule:
         return RedirectResponse("/schedules", status_code=303)
@@ -85,7 +97,9 @@ def update_schedule(
 
 
 @router.post("/{schedule_id}/toggle")
-def toggle_schedule(schedule_id: int, db: DbSession):
+def toggle_schedule(schedule_id: int, request: Request, db: DbSession):
+    if not can_edit(request):
+        return HTMLResponse("")
     schedule = db.get(Schedule, schedule_id)
     if schedule:
         schedule.enabled = not schedule.enabled
@@ -101,7 +115,9 @@ def toggle_schedule(schedule_id: int, db: DbSession):
 
 
 @router.delete("/{schedule_id}")
-def delete_schedule(schedule_id: int, db: DbSession):
+def delete_schedule(schedule_id: int, request: Request, db: DbSession):
+    if not can_edit(request):
+        return HTMLResponse("")
     schedule = db.get(Schedule, schedule_id)
     if schedule:
         db.delete(schedule)

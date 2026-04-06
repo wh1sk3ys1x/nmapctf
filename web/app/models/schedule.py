@@ -10,6 +10,7 @@ class Schedule(Base):
     __tablename__ = "schedules"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    org_id: Mapped[int | None] = mapped_column(ForeignKey("organizations.id"), default=None)
     name: Mapped[str] = mapped_column(String(255))
     asset_id: Mapped[int | None] = mapped_column(ForeignKey("assets.id"), default=None)
     asset_group_id: Mapped[int | None] = mapped_column(ForeignKey("asset_groups.id"), default=None)

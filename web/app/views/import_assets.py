@@ -7,6 +7,7 @@ from fastapi.responses import HTMLResponse
 
 from app.api.deps import DbSession
 from app.models import Asset, AssetType, AssetGroup
+from app.org_scope import get_org_id, org_filter, can_edit
 
 router = APIRouter(prefix="/assets", tags=["views"])
 
@@ -65,8 +66,10 @@ def _resolve_type(type_str: str | None, default_type: str) -> AssetType:
 
 @router.get("/import", response_class=HTMLResponse)
 def import_form(request: Request, db: DbSession):
+    if not can_edit(request):
+        return RedirectResponse("/assets", status_code=303)
     from app.main import templates
-    groups = db.query(AssetGroup).order_by(AssetGroup.name).all()
+    groups = org_filter(db.query(AssetGroup), AssetGroup, request).order_by(AssetGroup.name).all()
     asset_types = [t.value for t in AssetType]
     return templates.TemplateResponse(
         request, "assets/import.html",
@@ -82,6 +85,8 @@ async def import_assets(
     asset_group_id: int | None = Form(None),
     default_type: str = Form("ip"),
 ):
+    if not can_edit(request):
+        return RedirectResponse("/assets", status_code=303)
     from app.main import templates
 
     content_bytes = await file.read()
@@ -96,7 +101,7 @@ async def import_assets(
     elif ext == "txt":
         entries = _parse_txt(content_bytes.decode("utf-8", errors="replace"))
     else:
-        groups = db.query(AssetGroup).order_by(AssetGroup.name).all()
+        groups = org_filter(db.query(AssetGroup), AssetGroup, request).order_by(AssetGroup.name).all()
         asset_types = [t.value for t in AssetType]
         return templates.TemplateResponse(
             request, "assets/import.html",
@@ -109,7 +114,7 @@ async def import_assets(
     # Process entries
     created = []
     skipped = []
-    existing_addresses = {a.address for a in db.query(Asset.address).all()}
+    existing_addresses = {a.address for a in org_filter(db.query(Asset.address), Asset, request).all()}
 
     for entry in entries:
         address = entry["address"]
@@ -125,6 +130,7 @@ async def import_assets(
             type=asset_type,
             address=address,
             notes=entry.get("notes") or None,
+            org_id=get_org_id(request),
         )
         db.add(asset)
         try:
@@ -145,7 +151,7 @@ async def import_assets(
 
     db.commit()
 
-    groups = db.query(AssetGroup).order_by(AssetGroup.name).all()
+    groups = org_filter(db.query(AssetGroup), AssetGroup, request).order_by(AssetGroup.name).all()
     asset_types = [t.value for t in AssetType]
     return templates.TemplateResponse(
         request, "assets/import.html",

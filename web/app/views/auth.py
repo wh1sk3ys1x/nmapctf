@@ -26,6 +26,9 @@ def login_submit(request: Request, db: DbSession, username: str = Form(...), pas
         )
     request.session["user_id"] = user.id
     request.session["username"] = user.username
+    request.session["org_id"] = user.org_id
+    request.session["is_superadmin"] = user.is_superadmin
+    request.session["org_role"] = user.org_role.value if user.org_role else None
     return RedirectResponse("/", status_code=303)
 
 
@@ -65,10 +68,13 @@ def setup_submit(
             request, "auth/setup.html", {"error": "Password must be at least 8 characters"}, status_code=400,
         )
 
-    user = User(username=username, password_hash=hash_password(password))
+    user = User(username=username, password_hash=hash_password(password), is_superadmin=True)
     db.add(user)
     db.commit()
 
     request.session["user_id"] = user.id
     request.session["username"] = user.username
+    request.session["org_id"] = None
+    request.session["is_superadmin"] = True
+    request.session["org_role"] = None
     return RedirectResponse("/", status_code=303)

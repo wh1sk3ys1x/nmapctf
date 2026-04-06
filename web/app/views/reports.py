@@ -9,6 +9,7 @@ from weasyprint import HTML
 
 from app.api.deps import DbSession
 from app.models import Asset, ScanJob, AssetGroup
+from app.org_scope import org_filter
 from app.reports import single_scan_report, asset_report, full_report, group_report
 
 router = APIRouter(prefix="/reports", tags=["views"])
@@ -40,9 +41,9 @@ def _get_report(db, scope, scan_id, asset_id, group_id, date_from, date_to):
 @router.get("/", response_class=HTMLResponse)
 def report_index(request: Request, db: DbSession):
     from app.main import templates
-    assets = db.query(Asset).order_by(Asset.name).all()
-    groups = db.query(AssetGroup).order_by(AssetGroup.name).all()
-    scans = db.query(ScanJob).filter(ScanJob.status == "completed").order_by(ScanJob.queued_at.desc()).limit(50).all()
+    assets = org_filter(db.query(Asset), Asset, request).order_by(Asset.name).all()
+    groups = org_filter(db.query(AssetGroup), AssetGroup, request).order_by(AssetGroup.name).all()
+    scans = org_filter(db.query(ScanJob), ScanJob, request).filter(ScanJob.status == "completed").order_by(ScanJob.queued_at.desc()).limit(50).all()
     return templates.TemplateResponse(
         request, "reports/index.html", {"assets": assets, "groups": groups, "scans": scans},
     )

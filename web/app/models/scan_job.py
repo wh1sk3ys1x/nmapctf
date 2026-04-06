@@ -26,6 +26,7 @@ class ScanJob(Base):
     id: Mapped[str] = mapped_column(
         String(36), primary_key=True, default=lambda: str(uuid.uuid4())
     )
+    org_id: Mapped[int | None] = mapped_column(ForeignKey("organizations.id"), default=None)
     asset_id: Mapped[int] = mapped_column(ForeignKey("assets.id"))
     profile_id: Mapped[int] = mapped_column(ForeignKey("scan_profiles.id"))
     status: Mapped[ScanStatus] = mapped_column(Enum(ScanStatus), default=ScanStatus.pending)

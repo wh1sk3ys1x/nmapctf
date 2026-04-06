@@ -3,7 +3,7 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h1>Schedules</h1>
-  <a href="/schedules/new" class="btn btn-primary">Add Schedule</a>
+  {% if can_edit %}<a href="/schedules/new" class="btn btn-primary">Add Schedule</a>{% endif %}
 </div>
 
 <table class="table table-hover">
@@ -15,7 +15,7 @@
       <th>Cron</th>
       <th>Status</th>
       <th>Last Run</th>
-      <th style="width: 200px;">Actions</th>
+      {% if can_edit %}<th style="width: 200px;">Actions</th>{% endif %}
     </tr>
   </thead>
   <tbody>
@@ -41,6 +41,7 @@
         {% endif %}
       </td>
       <td>{{ sched.last_run_at.strftime('%Y-%m-%d %H:%M') if sched.last_run_at else '—' }}</td>
+      {% if can_edit %}
       <td>
         <button class="btn btn-sm {{ 'btn-outline-warning' if sched.enabled else 'btn-outline-success' }}"
                 hx-post="/schedules/{{ sched.id }}/toggle"
@@ -52,6 +53,7 @@
                 hx-swap="outerHTML"
                 hx-confirm="Delete schedule '{{ sched.name }}'?">Del</button>
       </td>
+      {% endif %}
     </tr>
     {% else %}
     <tr><td colspan="7" class="text-muted text-center">No schedules yet. <a href="/schedules/new">Create one.</a></td></tr>
