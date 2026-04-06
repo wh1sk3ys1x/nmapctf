@@ -51,9 +51,7 @@ def create_scan(body: ScanCreate, db: DbSession):
     queue = _get_queue()
     queue.enqueue(
         "tasks.run_scan",
-        job_id=job.id,
-        target=asset.address,
-        nmap_args=profile.nmap_args,
+        job.id, asset.address, profile.nmap_args,
         job_timeout="30m",
     )
 
