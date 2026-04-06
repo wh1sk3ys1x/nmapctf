@@ -120,9 +120,7 @@ def run_scan(
         queue = _get_queue()
         queue.enqueue(
             "tasks.run_scan",
-            job_id=job.id,
-            target=asset.address,
-            nmap_args=profile.nmap_args,
+            job.id, asset.address, profile.nmap_args,
             job_timeout="30m",
         )
         return RedirectResponse(f"/scans/{job.id}", status_code=303)
