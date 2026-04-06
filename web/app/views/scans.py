@@ -128,6 +128,25 @@ def run_scan(
         return RedirectResponse(f"/scans/{job.id}", status_code=303)
 
 
+@router.post("/{scan_id}/cancel", response_class=HTMLResponse)
+def cancel_scan(scan_id: str, request: Request, db: DbSession):
+    if not can_edit(request):
+        return RedirectResponse(f"/scans/{scan_id}", status_code=303)
+    scan = db.get(ScanJob, scan_id)
+    if scan and scan.status in (ScanStatus.pending, ScanStatus.running):
+        # Cancel the RQ job if still queued
+        from rq.job import Job as RqJob
+        try:
+            rq_job = RqJob.fetch(scan_id, connection=Redis.from_url(settings.redis_url))
+            rq_job.cancel()
+        except Exception:
+            pass  # Job may already be running or not found
+        scan.status = ScanStatus.failed
+        scan.error_message = "Cancelled by user"
+        db.commit()
+    return RedirectResponse(f"/scans/{scan_id}", status_code=303)
+
+
 @router.get("/{scan_id}", response_class=HTMLResponse)
 def scan_detail(scan_id: str, request: Request, db: DbSession):
     from app.main import templates
