@@ -29,19 +29,6 @@ def new_asset(request: Request):
     )
 
 
-@router.get("/{asset_id}/edit", response_class=HTMLResponse)
-def edit_asset(asset_id: int, request: Request, db: DbSession):
-    if not can_edit(request):
-        return RedirectResponse("/assets", status_code=303)
-    from app.main import templates
-    asset = db.get(Asset, asset_id)
-    if not asset:
-        return RedirectResponse("/assets", status_code=303)
-    return templates.TemplateResponse(
-        request, "assets/form.html", {"asset": asset, "asset_types": list(AssetType)},
-    )
-
-
 @router.post("/", response_class=HTMLResponse)
 def create_asset(
     request: Request,
@@ -57,40 +44,6 @@ def create_asset(
     db.add(asset)
     db.commit()
     return RedirectResponse("/assets", status_code=303)
-
-
-@router.post("/{asset_id}", response_class=HTMLResponse)
-def update_asset(
-    asset_id: int,
-    request: Request,
-    db: DbSession,
-    name: str = Form(...),
-    type: str = Form(...),
-    address: str = Form(...),
-    notes: str = Form(""),
-):
-    if not can_edit(request):
-        return RedirectResponse("/assets", status_code=303)
-    asset = db.get(Asset, asset_id)
-    if not asset:
-        return RedirectResponse("/assets", status_code=303)
-    asset.name = name
-    asset.type = AssetType(type)
-    asset.address = address
-    asset.notes = notes or None
-    db.commit()
-    return RedirectResponse("/assets", status_code=303)
-
-
-@router.delete("/{asset_id}")
-def delete_asset(asset_id: int, request: Request, db: DbSession):
-    if not can_edit(request):
-        return HTMLResponse("")
-    asset = db.get(Asset, asset_id)
-    if asset:
-        db.delete(asset)
-        db.commit()
-    return HTMLResponse("")
 
 
 @router.post("/bulk-delete", response_class=HTMLResponse)
@@ -127,3 +80,50 @@ def bulk_add_to_group(
                 group.assets.append(asset)
     db.commit()
     return RedirectResponse("/assets", status_code=303)
+
+
+@router.get("/{asset_id}/edit", response_class=HTMLResponse)
+def edit_asset(asset_id: int, request: Request, db: DbSession):
+    if not can_edit(request):
+        return RedirectResponse("/assets", status_code=303)
+    from app.main import templates
+    asset = db.get(Asset, asset_id)
+    if not asset:
+        return RedirectResponse("/assets", status_code=303)
+    return templates.TemplateResponse(
+        request, "assets/form.html", {"asset": asset, "asset_types": list(AssetType)},
+    )
+
+
+@router.post("/{asset_id}", response_class=HTMLResponse)
+def update_asset(
+    asset_id: int,
+    request: Request,
+    db: DbSession,
+    name: str = Form(...),
+    type: str = Form(...),
+    address: str = Form(...),
+    notes: str = Form(""),
+):
+    if not can_edit(request):
+        return RedirectResponse("/assets", status_code=303)
+    asset = db.get(Asset, asset_id)
+    if not asset:
+        return RedirectResponse("/assets", status_code=303)
+    asset.name = name
+    asset.type = AssetType(type)
+    asset.address = address
+    asset.notes = notes or None
+    db.commit()
+    return RedirectResponse("/assets", status_code=303)
+
+
+@router.delete("/{asset_id}")
+def delete_asset(asset_id: int, request: Request, db: DbSession):
+    if not can_edit(request):
+        return HTMLResponse("")
+    asset = db.get(Asset, asset_id)
+    if asset:
+        db.delete(asset)
+        db.commit()
+    return HTMLResponse("")
