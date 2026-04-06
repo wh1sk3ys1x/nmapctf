@@ -44,5 +44,4 @@ cd web && .venv/bin/python -m pytest ../tests/web/ -v
 
 ## Git
 
-- Do not add Claude authorship (Co-Authored-By) to git commits.
-- Do not add Claude/AI attribution to pull request descriptions.
+- Do not add Claude/AI authorship or attribution anywhere (commits, PRs, code comments, docs, etc.).
