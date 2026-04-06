@@ -10,12 +10,36 @@
            value="{{ schedule.name if schedule else '' }}">
   </div>
   <div class="mb-3">
+    <label class="form-label">Target</label>
+    <div class="form-check">
+      <input class="form-check-input" type="radio" name="target_type" id="target_asset" value="asset"
+             {{ 'checked' if not schedule or not schedule.asset_group_id else '' }} onchange="toggleTarget()">
+      <label class="form-check-label" for="target_asset">Single Asset</label>
+    </div>
+    <div class="form-check">
+      <input class="form-check-input" type="radio" name="target_type" id="target_group" value="group"
+             {{ 'checked' if schedule and schedule.asset_group_id else '' }} onchange="toggleTarget()">
+      <label class="form-check-label" for="target_group">Asset Group</label>
+    </div>
+  </div>
+  <div class="mb-3" id="asset_field">
     <label for="asset_id" class="form-label">Asset</label>
-    <select class="form-select" id="asset_id" name="asset_id" required>
+    <select class="form-select" id="asset_id" name="asset_id">
       <option value="">Select asset...</option>
       {% for asset in assets %}
       <option value="{{ asset.id }}" {{ 'selected' if schedule and schedule.asset_id == asset.id else '' }}>
         {{ asset.name }} ({{ asset.address }})
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="mb-3" id="group_field" style="display: none;">
+    <label for="asset_group_id" class="form-label">Asset Group</label>
+    <select class="form-select" id="asset_group_id" name="asset_group_id">
+      <option value="">Select group...</option>
+      {% for group in groups %}
+      <option value="{{ group.id }}" {{ 'selected' if schedule and schedule.asset_group_id == group.id else '' }}>
+        {{ group.name }} ({{ group.assets | length }} assets)
       </option>
       {% endfor %}
     </select>
@@ -41,4 +65,13 @@
   <button type="submit" class="btn btn-primary">{{ 'Update' if schedule else 'Create' }}</button>
   <a href="/schedules" class="btn btn-outline-secondary">Cancel</a>
 </form>
+
+<script>
+function toggleTarget() {
+  const isGroup = document.getElementById('target_group').checked;
+  document.getElementById('asset_field').style.display = isGroup ? 'none' : '';
+  document.getElementById('group_field').style.display = isGroup ? '' : 'none';
+}
+document.addEventListener('DOMContentLoaded', toggleTarget);
+</script>
 {% endblock %}

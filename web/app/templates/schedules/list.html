@@ -22,7 +22,15 @@
     {% for sched in schedules %}
     <tr id="schedule-{{ sched.id }}">
       <td>{{ sched.name }}</td>
-      <td>{{ sched.asset.name }}</td>
+      <td>
+        {% if sched.asset_group %}
+        <span class="badge bg-info">{{ sched.asset_group.name }}</span> (group)
+        {% elif sched.asset %}
+        {{ sched.asset.name }}
+        {% else %}
+        —
+        {% endif %}
+      </td>
       <td>{{ sched.profile.name }}</td>
       <td><code>{{ sched.cron_expression }}</code></td>
       <td>
