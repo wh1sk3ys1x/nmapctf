@@ -5,7 +5,7 @@ from rq import Queue
 
 from app.api.deps import DbSession
 from app.config import settings
-from app.models import ScanJob, Asset, ScanProfile, ScanStatus
+from app.models import ScanJob, Asset, ScanProfile, ScanStatus, AssetGroup
 
 router = APIRouter(prefix="/scans", tags=["views"])
 
@@ -51,37 +51,58 @@ def run_scan_form(request: Request, db: DbSession):
     from app.main import templates
     assets = db.query(Asset).order_by(Asset.name).all()
     profiles = db.query(ScanProfile).order_by(ScanProfile.name).all()
+    groups = db.query(AssetGroup).order_by(AssetGroup.name).all()
     return templates.TemplateResponse(
-        request, "scans/run.html", {"assets": assets, "profiles": profiles},
+        request, "scans/run.html", {"assets": assets, "profiles": profiles, "groups": groups},
     )
 
 
 @router.post("/run", response_class=HTMLResponse)
 def run_scan(
     db: DbSession,
-    asset_id: int = Form(...),
+    asset_id: int | None = Form(None),
+    asset_group_id: int | None = Form(None),
     profile_id: int = Form(...),
 ):
-    asset = db.get(Asset, asset_id)
     profile = db.get(ScanProfile, profile_id)
-    if not asset or not profile:
+    if not profile:
         return RedirectResponse("/scans/run", status_code=303)
 
-    job = ScanJob(asset_id=asset_id, profile_id=profile_id)
-    db.add(job)
-    db.commit()
-    db.refresh(job)
-
-    queue = _get_queue()
-    queue.enqueue(
-        "tasks.run_scan",
-        job_id=job.id,
-        target=asset.address,
-        nmap_args=profile.nmap_args,
-        job_timeout="30m",
-    )
-
-    return RedirectResponse(f"/scans/{job.id}", status_code=303)
+    if asset_group_id:
+        group = db.get(AssetGroup, asset_group_id)
+        if not group or not group.assets:
+            return RedirectResponse("/scans/run", status_code=303)
+        queue = _get_queue()
+        for asset in group.assets:
+            job = ScanJob(asset_id=asset.id, profile_id=profile_id, asset_group_id=group.id)
+            db.add(job)
+            db.commit()
+            db.refresh(job)
+            queue.enqueue(
+                "tasks.run_scan",
+                job_id=job.id,
+                target=asset.address,
+                nmap_args=profile.nmap_args,
+                job_timeout="30m",
+            )
+        return RedirectResponse("/scans", status_code=303)
+    else:
+        asset = db.get(Asset, asset_id)
+        if not asset:
+            return RedirectResponse("/scans/run", status_code=303)
+        job = ScanJob(asset_id=asset_id, profile_id=profile_id)
+        db.add(job)
+        db.commit()
+        db.refresh(job)
+        queue = _get_queue()
+        queue.enqueue(
+            "tasks.run_scan",
+            job_id=job.id,
+            target=asset.address,
+            nmap_args=profile.nmap_args,
+            job_timeout="30m",
+        )
+        return RedirectResponse(f"/scans/{job.id}", status_code=303)
 
 
 @router.get("/{scan_id}", response_class=HTMLResponse)
