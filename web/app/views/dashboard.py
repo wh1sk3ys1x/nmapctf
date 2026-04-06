@@ -4,6 +4,7 @@ from sqlalchemy import func
 
 from app.api.deps import DbSession
 from app.models import ScanJob, Asset, Schedule, ScanStatus
+from app.org_scope import org_filter, is_superadmin
 
 router = APIRouter(tags=["views"])
 
@@ -12,24 +13,24 @@ router = APIRouter(tags=["views"])
 def dashboard(request: Request, db: DbSession):
     from app.main import templates
 
-    total_assets = db.query(func.count(Asset.id)).scalar()
-    total_scans = db.query(func.count(ScanJob.id)).scalar()
-    running_scans = db.query(func.count(ScanJob.id)).filter(
+    total_assets = org_filter(db.query(func.count(Asset.id)), Asset, request).scalar()
+    total_scans = org_filter(db.query(func.count(ScanJob.id)), ScanJob, request).scalar()
+    running_scans = org_filter(db.query(func.count(ScanJob.id)), ScanJob, request).filter(
         ScanJob.status.in_([ScanStatus.pending, ScanStatus.running])
     ).scalar()
-    active_schedules = db.query(func.count(Schedule.id)).filter(
+    active_schedules = org_filter(db.query(func.count(Schedule.id)), Schedule, request).filter(
         Schedule.enabled == True
     ).scalar()
 
     recent_scans = (
-        db.query(ScanJob)
+        org_filter(db.query(ScanJob), ScanJob, request)
         .order_by(ScanJob.queued_at.desc())
         .limit(10)
         .all()
     )
 
     upcoming_schedules = (
-        db.query(Schedule)
+        org_filter(db.query(Schedule), Schedule, request)
         .filter(Schedule.enabled == True)
         .order_by(Schedule.name)
         .limit(5)

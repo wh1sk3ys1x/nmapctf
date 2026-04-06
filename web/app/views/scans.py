@@ -6,6 +6,7 @@ from rq import Queue
 from app.api.deps import DbSession
 from app.config import settings
 from app.models import ScanJob, Asset, ScanProfile, ScanStatus, AssetGroup
+from app.org_scope import org_filter, get_org_id, can_edit
 
 router = APIRouter(prefix="/scans", tags=["views"])
 
@@ -24,14 +25,14 @@ def scan_history(
 ):
     from app.main import templates
 
-    query = db.query(ScanJob)
+    query = org_filter(db.query(ScanJob), ScanJob, request)
     if status:
         query = query.filter(ScanJob.status == status)
     if asset_id:
         query = query.filter(ScanJob.asset_id == asset_id)
     scans = query.order_by(ScanJob.queued_at.desc()).limit(100).all()
 
-    assets = db.query(Asset).order_by(Asset.name).all()
+    assets = org_filter(db.query(Asset), Asset, request).order_by(Asset.name).all()
     statuses = [s.value for s in ScanStatus]
 
     return templates.TemplateResponse(
@@ -48,10 +49,12 @@ def scan_history(
 
 @router.get("/run", response_class=HTMLResponse)
 def run_scan_form(request: Request, db: DbSession):
+    if not can_edit(request):
+        return RedirectResponse("/scans", status_code=303)
     from app.main import templates
-    assets = db.query(Asset).order_by(Asset.name).all()
+    assets = org_filter(db.query(Asset), Asset, request).order_by(Asset.name).all()
     profiles = db.query(ScanProfile).order_by(ScanProfile.name).all()
-    groups = db.query(AssetGroup).order_by(AssetGroup.name).all()
+    groups = org_filter(db.query(AssetGroup), AssetGroup, request).order_by(AssetGroup.name).all()
     return templates.TemplateResponse(
         request, "scans/run.html", {"assets": assets, "profiles": profiles, "groups": groups},
     )
@@ -59,11 +62,14 @@ def run_scan_form(request: Request, db: DbSession):
 
 @router.post("/run", response_class=HTMLResponse)
 def run_scan(
+    request: Request,
     db: DbSession,
     asset_id: int | None = Form(None),
     asset_group_id: int | None = Form(None),
     profile_id: int = Form(...),
 ):
+    if not can_edit(request):
+        return RedirectResponse("/scans", status_code=303)
     profile = db.get(ScanProfile, profile_id)
     if not profile:
         return RedirectResponse("/scans/run", status_code=303)
@@ -74,7 +80,7 @@ def run_scan(
             return RedirectResponse("/scans/run", status_code=303)
         queue = _get_queue()
         for asset in group.assets:
-            job = ScanJob(asset_id=asset.id, profile_id=profile_id, asset_group_id=group.id)
+            job = ScanJob(asset_id=asset.id, profile_id=profile_id, asset_group_id=group.id, org_id=get_org_id(request))
             db.add(job)
             db.commit()
             db.refresh(job)
@@ -90,7 +96,7 @@ def run_scan(
         asset = db.get(Asset, asset_id)
         if not asset:
             return RedirectResponse("/scans/run", status_code=303)
-        job = ScanJob(asset_id=asset_id, profile_id=profile_id)
+        job = ScanJob(asset_id=asset_id, profile_id=profile_id, org_id=get_org_id(request))
         db.add(job)
         db.commit()
         db.refresh(job)
