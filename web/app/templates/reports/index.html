@@ -69,8 +69,22 @@ function toggleFields() {
   document.getElementById('date_fields').style.display = scope === 'scan' ? 'none' : '';
 }
 function go(base) {
-  const form = document.getElementById('reportForm');
-  const params = new URLSearchParams(new FormData(form));
+  const scope = document.getElementById('scope').value;
+  const params = new URLSearchParams();
+  params.set('scope', scope);
+  if (scope === 'group') {
+    params.set('group_id', document.getElementById('group_id').value);
+  } else if (scope === 'asset') {
+    params.set('asset_id', document.getElementById('asset_id').value);
+  } else if (scope === 'scan') {
+    params.set('scan_id', document.getElementById('scan_id').value);
+  }
+  if (scope !== 'scan') {
+    const df = document.getElementById('date_from').value;
+    const dt = document.getElementById('date_to').value;
+    if (df) params.set('date_from', df);
+    if (dt) params.set('date_to', dt);
+  }
   window.location.href = base + '?' + params.toString();
 }
 </script>
