@@ -78,3 +78,44 @@ def setup_submit(
     request.session["is_superadmin"] = True
     request.session["org_role"] = None
     return RedirectResponse("/", status_code=303)
+
+
+@router.get("/account", response_class=HTMLResponse)
+def account_page(request: Request):
+    from app.main import templates
+    return templates.TemplateResponse(request, "auth/account.html", {"error": None, "success": None})
+
+
+@router.post("/account", response_class=HTMLResponse)
+def change_password(
+    request: Request,
+    db: DbSession,
+    current_password: str = Form(...),
+    new_password: str = Form(...),
+    new_password_confirm: str = Form(...),
+):
+    from app.main import templates
+    user = db.get(User, request.session.get("user_id"))
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+
+    if not verify_password(current_password, user.password_hash):
+        return templates.TemplateResponse(
+            request, "auth/account.html", {"error": "Current password is incorrect", "success": None}, status_code=400,
+        )
+
+    if new_password != new_password_confirm:
+        return templates.TemplateResponse(
+            request, "auth/account.html", {"error": "New passwords do not match", "success": None}, status_code=400,
+        )
+
+    if len(new_password) < 8:
+        return templates.TemplateResponse(
+            request, "auth/account.html", {"error": "Password must be at least 8 characters", "success": None}, status_code=400,
+        )
+
+    user.password_hash = hash_password(new_password)
+    db.commit()
+    return templates.TemplateResponse(
+        request, "auth/account.html", {"error": None, "success": "Password updated successfully"},
+    )
