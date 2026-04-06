@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Import Assets — nmapctf{% endblock %}
+{% block content %}
+<h1>Import Assets</h1>
+
+{% if results and results.error %}
+<div class="alert alert-danger mt-3">{{ results.error }}</div>
+{% elif results %}
+<div class="mt-3">
+  <h3>Import Results</h3>
+  <div class="row mb-3">
+    <div class="col-auto">
+      <div class="card text-bg-success" style="width: 10rem;">
+        <div class="card-body text-center">
+          <h2>{{ results.created | length }}</h2>
+          <p class="mb-0">Created</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-auto">
+      <div class="card text-bg-warning" style="width: 10rem;">
+        <div class="card-body text-center">
+          <h2>{{ results.skipped | length }}</h2>
+          <p class="mb-0">Skipped</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-auto">
+      <div class="card text-bg-secondary" style="width: 10rem;">
+        <div class="card-body text-center">
+          <h2>{{ results.total }}</h2>
+          <p class="mb-0">Total Rows</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if results.group_name %}
+  <p>Added to group: <span class="badge bg-info">{{ results.group_name }}</span></p>
+  {% endif %}
+
+  {% if results.created %}
+  <h5>Created Assets</h5>
+  <table class="table table-sm">
+    <thead><tr><th>Name</th><th>Address</th></tr></thead>
+    <tbody>
+      {% for item in results.created %}
+      <tr><td>{{ item.name }}</td><td><code>{{ item.address }}</code></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  {% if results.skipped %}
+  <h5>Skipped Entries</h5>
+  <table class="table table-sm">
+    <thead><tr><th>Address</th><th>Reason</th></tr></thead>
+    <tbody>
+      {% for item in results.skipped %}
+      <tr><td><code>{{ item.address }}</code></td><td>{{ item.reason }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+<hr>
+{% endif %}
+
+<form method="post" action="/assets/import" enctype="multipart/form-data" class="mt-3" style="max-width: 600px;">
+  <div class="mb-3">
+    <label for="file" class="form-label">File</label>
+    <input type="file" class="form-control" id="file" name="file" accept=".csv,.xlsx,.txt" required>
+    <div class="form-text">Supported formats: CSV, XLSX, TXT. CSV/XLSX should have an <code>address</code> column. TXT is one address per line.</div>
+  </div>
+  <div class="mb-3">
+    <label for="asset_group_id" class="form-label">Add to Group (optional)</label>
+    <select class="form-select" id="asset_group_id" name="asset_group_id">
+      <option value="">None</option>
+      {% for group in groups %}
+      <option value="{{ group.id }}">{{ group.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="mb-3">
+    <label for="default_type" class="form-label">Default Asset Type</label>
+    <select class="form-select" id="default_type" name="default_type">
+      {% for t in asset_types %}
+      <option value="{{ t }}" {{ 'selected' if t == 'ip' else '' }}>{{ t }}</option>
+      {% endfor %}
+    </select>
+    <div class="form-text">Used when the file doesn't specify a type for an entry.</div>
+  </div>
+  <button type="submit" class="btn btn-primary">Import</button>
+  <a href="/assets" class="btn btn-outline-secondary">Cancel</a>
+</form>
+{% endblock %}

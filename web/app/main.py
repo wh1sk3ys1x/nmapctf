@@ -21,6 +21,7 @@ from app.views import scans as scan_views
 from app.views import auth as auth_views
 from app.views import reports as report_views
 from app.views import groups as group_views
+from app.views import import_assets as import_views
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -88,6 +89,7 @@ app.include_router(api_asset_groups.router, prefix="/api/v1")
 # View routers
 app.include_router(auth_views.router)
 app.include_router(dashboard_views.router)
+app.include_router(import_views.router)
 app.include_router(asset_views.router)
 app.include_router(profile_views.router)
 app.include_router(schedule_views.router)
