@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Account — nmapctf{% endblock %}
+{% block content %}
+<h1 class="mb-4">Account</h1>
+
+<div class="card" style="max-width: 500px;">
+  <div class="card-header">Change Password</div>
+  <div class="card-body">
+    {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+    {% if success %}
+    <div class="alert alert-success">{{ success }}</div>
+    {% endif %}
+    <form method="post" action="/account">
+      <div class="mb-3">
+        <label for="current_password" class="form-label">Current Password</label>
+        <input type="password" class="form-control" id="current_password" name="current_password" required>
+      </div>
+      <div class="mb-3">
+        <label for="new_password" class="form-label">New Password</label>
+        <input type="password" class="form-control" id="new_password" name="new_password" required minlength="8">
+      </div>
+      <div class="mb-3">
+        <label for="new_password_confirm" class="form-label">Confirm New Password</label>
+        <input type="password" class="form-control" id="new_password_confirm" name="new_password_confirm" required minlength="8">
+      </div>
+      <button type="submit" class="btn btn-primary">Update Password</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
