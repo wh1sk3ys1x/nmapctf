@@ -11,9 +11,31 @@
   {% endif %}
 </div>
 
+{% if can_edit %}
+<div id="bulk-actions" class="mb-3 p-3 rounded d-none" style="background: var(--bg-elevated, #1e2a38); border: 1px solid var(--border-medium, #334);">
+  <span id="selected-count" style="font-family: var(--font-mono, monospace); font-size: 0.85rem;">0 selected</span>
+  <div class="d-inline-flex gap-2 ms-3">
+    <button type="button" class="btn btn-sm btn-outline-danger" onclick="bulkDelete()">Delete Selected</button>
+    <form id="add-to-group-form" action="/assets/bulk-add-to-group" method="post" class="d-inline-flex gap-2">
+      <div id="add-group-hidden-ids"></div>
+      <select class="form-select form-select-sm" name="group_id" style="width: auto;">
+        <option value="">Add to group...</option>
+        {% for group in groups %}
+        <option value="{{ group.id }}">{{ group.name }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn btn-sm btn-outline-light">Add</button>
+    </form>
+  </div>
+</div>
+{% endif %}
+
 <table class="table table-hover">
   <thead>
     <tr>
+      {% if can_edit %}
+      <th style="width: 40px;"><input type="checkbox" class="form-check-input" id="select-all" onchange="toggleAll(this)"></th>
+      {% endif %}
       <th>Name</th>
       <th>Type</th>
       <th>Address</th>
@@ -24,6 +46,9 @@
   <tbody>
     {% for asset in assets %}
     <tr id="asset-{{ asset.id }}">
+      {% if can_edit %}
+      <td><input type="checkbox" class="form-check-input asset-check" value="{{ asset.id }}" onchange="updateBulk()"></td>
+      {% endif %}
       <td>{{ asset.name }}</td>
       <td><span class="badge bg-secondary">{{ asset.type.value }}</span></td>
       <td><code>{{ asset.address }}</code></td>
@@ -40,8 +65,64 @@
       {% endif %}
     </tr>
     {% else %}
-    <tr><td colspan="{{ 5 if can_edit else 4 }}" class="text-muted text-center">No assets yet.{% if can_edit %} <a href="/assets/new">Add one.</a>{% endif %}</td></tr>
+    <tr><td colspan="{{ 6 if can_edit else 4 }}" class="text-muted text-center">No assets yet.{% if can_edit %} <a href="/assets/new">Add one.</a>{% endif %}</td></tr>
     {% endfor %}
   </tbody>
 </table>
+
+{% if can_edit %}
+<form id="bulk-delete-form" action="/assets/bulk-delete" method="post" class="d-none">
+  <div id="delete-hidden-ids"></div>
+</form>
+
+<script>
+function getSelected() {
+  return Array.from(document.querySelectorAll('.asset-check:checked')).map(cb => cb.value);
+}
+
+function updateBulk() {
+  const ids = getSelected();
+  const bar = document.getElementById('bulk-actions');
+  const count = document.getElementById('selected-count');
+  if (ids.length > 0) {
+    bar.classList.remove('d-none');
+    count.textContent = ids.length + ' selected';
+  } else {
+    bar.classList.add('d-none');
+  }
+}
+
+function toggleAll(master) {
+  document.querySelectorAll('.asset-check').forEach(cb => cb.checked = master.checked);
+  updateBulk();
+}
+
+function bulkDelete() {
+  const ids = getSelected();
+  if (!ids.length) return;
+  if (!confirm('Delete ' + ids.length + ' asset(s)?')) return;
+  const form = document.getElementById('bulk-delete-form');
+  const container = document.getElementById('delete-hidden-ids');
+  container.innerHTML = '';
+  ids.forEach(id => {
+    const input = document.createElement('input');
+    input.type = 'hidden'; input.name = 'asset_ids'; input.value = id;
+    container.appendChild(input);
+  });
+  form.submit();
+}
+
+document.getElementById('add-to-group-form').addEventListener('submit', function(e) {
+  const ids = getSelected();
+  if (!ids.length) { e.preventDefault(); return; }
+  const container = document.getElementById('add-group-hidden-ids');
+  container.innerHTML = '';
+  ids.forEach(id => {
+    const input = document.createElement('input');
+    input.type = 'hidden'; input.name = 'asset_ids'; input.value = id;
+    container.appendChild(input);
+  });
+});
+</script>
+{% endif %}
 {% endblock %}
