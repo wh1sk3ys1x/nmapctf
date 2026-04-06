@@ -5,7 +5,7 @@ from rq import Queue
 
 from app.api.deps import DbSession
 from app.config import settings
-from app.models import ScanJob, Asset, ScanProfile, ScanStatus, AssetGroup
+from app.models import ScanJob, Asset, AssetType, ScanProfile, ScanStatus, AssetGroup
 from app.org_scope import org_filter, get_org_id, can_edit
 
 router = APIRouter(prefix="/scans", tags=["views"])
@@ -66,6 +66,7 @@ def run_scan(
     db: DbSession,
     asset_id: int | None = Form(None),
     asset_group_id: int | None = Form(None),
+    quick_target: str | None = Form(None),
     profile_id: int = Form(...),
 ):
     if not can_edit(request):
@@ -73,6 +74,21 @@ def run_scan(
     profile = db.get(ScanProfile, profile_id)
     if not profile:
         return RedirectResponse("/scans/run", status_code=303)
+
+    # Quick target: auto-create asset from typed address
+    if quick_target and quick_target.strip():
+        address = quick_target.strip()
+        org_id = get_org_id(request)
+        # Reuse existing asset if address matches within this org
+        existing = db.query(Asset).filter(Asset.address == address, Asset.org_id == org_id).first()
+        if existing:
+            asset_id = existing.id
+        else:
+            asset = Asset(name=f"asset-{address}", type=AssetType.ip, address=address, org_id=org_id)
+            db.add(asset)
+            db.commit()
+            db.refresh(asset)
+            asset_id = asset.id
 
     if asset_group_id:
         group = db.get(AssetGroup, asset_group_id)
