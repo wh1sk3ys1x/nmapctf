@@ -122,7 +122,15 @@ async def import_assets(
             skipped.append({"address": address, "reason": "already exists"})
             continue
 
-        name = entry.get("name") or f"asset-{address}"
+        name = (
+            entry.get("name")
+            or entry.get("hostname")
+            or entry.get("host")
+            or entry.get("location")
+            or entry.get("label")
+            or entry.get("description")
+            or f"asset-{address}"
+        )
         asset_type = _resolve_type(entry.get("type"), default_type)
 
         asset = Asset(
