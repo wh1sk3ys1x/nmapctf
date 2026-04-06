@@ -3,10 +3,12 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h1>Assets</h1>
+  {% if can_edit %}
   <div class="d-flex gap-2">
     <a href="/assets/new" class="btn btn-primary">Add Asset</a>
     <a href="/assets/import" class="btn btn-outline-secondary">Import</a>
   </div>
+  {% endif %}
 </div>
 
 <table class="table table-hover">
@@ -16,7 +18,7 @@
       <th>Type</th>
       <th>Address</th>
       <th>Notes</th>
-      <th style="width: 120px;">Actions</th>
+      {% if can_edit %}<th style="width: 120px;">Actions</th>{% endif %}
     </tr>
   </thead>
   <tbody>
@@ -26,6 +28,7 @@
       <td><span class="badge bg-secondary">{{ asset.type.value }}</span></td>
       <td><code>{{ asset.address }}</code></td>
       <td>{{ asset.notes or '' }}</td>
+      {% if can_edit %}
       <td>
         <a href="/assets/{{ asset.id }}/edit" class="btn btn-sm btn-outline-light">Edit</a>
         <button class="btn btn-sm btn-outline-danger"
@@ -34,9 +37,10 @@
                 hx-swap="outerHTML"
                 hx-confirm="Delete asset '{{ asset.name }}'?">Del</button>
       </td>
+      {% endif %}
     </tr>
     {% else %}
-    <tr><td colspan="5" class="text-muted text-center">No assets yet. <a href="/assets/new">Add one.</a></td></tr>
+    <tr><td colspan="{{ 5 if can_edit else 4 }}" class="text-muted text-center">No assets yet.{% if can_edit %} <a href="/assets/new">Add one.</a>{% endif %}</td></tr>
     {% endfor %}
   </tbody>
 </table>
