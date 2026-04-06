@@ -26,8 +26,21 @@ def _parse_date(value: str | None):
         return None
 
 
+def _to_int(value: str | None) -> int | None:
+    """Convert string to int, or None if empty/invalid."""
+    if value and value.strip():
+        try:
+            return int(value)
+        except ValueError:
+            pass
+    return None
+
+
 def _get_report(db, scope, scan_id, asset_id, group_id, date_from, date_to):
     """Dispatch to the correct report function based on scope."""
+    asset_id = _to_int(asset_id)
+    group_id = _to_int(group_id)
+    scan_id = scan_id if scan_id and scan_id.strip() else None
     if scope == "scan" and scan_id:
         return single_scan_report(db, scan_id)
     elif scope == "asset" and asset_id:
@@ -54,11 +67,11 @@ def report_html(
     request: Request,
     db: DbSession,
     scope: str = Query("all"),
-    scan_id: str | None = Query(None),
-    asset_id: int | None = Query(None),
-    group_id: int | None = Query(None),
-    date_from: str | None = Query(None),
-    date_to: str | None = Query(None),
+    scan_id: str = Query(""),
+    asset_id: str = Query(""),
+    group_id: str = Query(""),
+    date_from: str = Query(""),
+    date_to: str = Query(""),
 ):
     from app.main import templates
     data = _get_report(db, scope, scan_id, asset_id, group_id, date_from, date_to)
@@ -75,11 +88,11 @@ def report_pdf(
     request: Request,
     db: DbSession,
     scope: str = Query("all"),
-    scan_id: str | None = Query(None),
-    asset_id: int | None = Query(None),
-    group_id: int | None = Query(None),
-    date_from: str | None = Query(None),
-    date_to: str | None = Query(None),
+    scan_id: str = Query(""),
+    asset_id: str = Query(""),
+    group_id: str = Query(""),
+    date_from: str = Query(""),
+    date_to: str = Query(""),
 ):
     from app.main import templates
     data = _get_report(db, scope, scan_id, asset_id, group_id, date_from, date_to)
@@ -101,11 +114,11 @@ def report_pdf(
 def report_csv(
     db: DbSession,
     scope: str = Query("all"),
-    scan_id: str | None = Query(None),
-    asset_id: int | None = Query(None),
-    group_id: int | None = Query(None),
-    date_from: str | None = Query(None),
-    date_to: str | None = Query(None),
+    scan_id: str = Query(""),
+    asset_id: str = Query(""),
+    group_id: str = Query(""),
+    date_from: str = Query(""),
+    date_to: str = Query(""),
 ):
     data = _get_report(db, scope, scan_id, asset_id, group_id, date_from, date_to)
     if data is None:
@@ -127,11 +140,11 @@ def report_csv(
 def report_json(
     db: DbSession,
     scope: str = Query("all"),
-    scan_id: str | None = Query(None),
-    asset_id: int | None = Query(None),
-    group_id: int | None = Query(None),
-    date_from: str | None = Query(None),
-    date_to: str | None = Query(None),
+    scan_id: str = Query(""),
+    asset_id: str = Query(""),
+    group_id: str = Query(""),
+    date_from: str = Query(""),
+    date_to: str = Query(""),
 ):
     data = _get_report(db, scope, scan_id, asset_id, group_id, date_from, date_to)
     if data is None:
