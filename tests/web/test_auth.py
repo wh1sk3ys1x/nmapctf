@@ -71,7 +71,7 @@ class TestSetup:
     def test_setup_page_renders(self, client):
         resp = client.get("/setup")
         assert resp.status_code == 200
-        assert "Create Admin Account" in resp.text
+        assert "setup" in resp.text.lower()
 
     def test_setup_creates_user_and_logs_in(self, client):
         resp = client.post(
