@@ -105,9 +105,7 @@ def run_scan(
             db.refresh(job)
             queue.enqueue(
                 "tasks.run_scan",
-                job_id=job.id,
-                target=asset.address,
-                nmap_args=profile.nmap_args,
+                job.id, asset.address, profile.nmap_args,
                 job_timeout="30m",
             )
         return RedirectResponse("/scans", status_code=303)
