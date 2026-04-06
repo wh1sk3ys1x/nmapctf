@@ -5,35 +5,27 @@
 
 <div class="row g-3 mb-4">
   <div class="col-md-3">
-    <div class="card text-center">
-      <div class="card-body">
-        <h5 class="card-title text-muted">Assets</h5>
-        <p class="display-6">{{ total_assets }}</p>
-      </div>
+    <div class="stat-card accent">
+      <div class="stat-value">{{ total_assets }}</div>
+      <div class="stat-label">Assets</div>
     </div>
   </div>
   <div class="col-md-3">
-    <div class="card text-center">
-      <div class="card-body">
-        <h5 class="card-title text-muted">Total Scans</h5>
-        <p class="display-6">{{ total_scans }}</p>
-      </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ total_scans }}</div>
+      <div class="stat-label">Total Scans</div>
     </div>
   </div>
   <div class="col-md-3">
-    <div class="card text-center">
-      <div class="card-body">
-        <h5 class="card-title text-muted">Active Scans</h5>
-        <p class="display-6">{{ running_scans }}</p>
-      </div>
+    <div class="stat-card green">
+      <div class="stat-value">{{ running_scans }}</div>
+      <div class="stat-label">Active Scans</div>
     </div>
   </div>
   <div class="col-md-3">
-    <div class="card text-center">
-      <div class="card-body">
-        <h5 class="card-title text-muted">Schedules</h5>
-        <p class="display-6">{{ active_schedules }}</p>
-      </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ active_schedules }}</div>
+      <div class="stat-label">Schedules</div>
     </div>
   </div>
 </div>
@@ -61,10 +53,10 @@
               <td>{{ scan.asset.name }}</td>
               <td>{{ scan.profile.name }}</td>
               <td><span class="scan-status-{{ scan.status.value }}">{{ scan.status.value }}</span></td>
-              <td>{{ scan.queued_at.strftime('%Y-%m-%d %H:%M') }}</td>
+              <td style="font-family: var(--font-mono); font-size: 0.8em;">{{ scan.queued_at.strftime('%Y-%m-%d %H:%M') }}</td>
             </tr>
             {% else %}
-            <tr><td colspan="4" class="text-muted text-center">No scans yet. <a href="/scans/run">Run one now.</a></td></tr>
+            <tr><td colspan="4" class="text-muted text-center py-4">No scans yet.{% if can_edit %} <a href="/scans/run">Run one now.</a>{% endif %}</td></tr>
             {% endfor %}
           </tbody>
         </table>
@@ -80,12 +72,12 @@
       </div>
       <ul class="list-group list-group-flush">
         {% for sched in upcoming_schedules %}
-        <li class="list-group-item d-flex justify-content-between">
+        <li class="list-group-item d-flex justify-content-between align-items-center">
           <span>{{ sched.name }}</span>
           <code>{{ sched.cron_expression }}</code>
         </li>
         {% else %}
-        <li class="list-group-item text-muted text-center">No active schedules.</li>
+        <li class="list-group-item text-muted text-center py-4">No active schedules.</li>
         {% endfor %}
       </ul>
     </div>
