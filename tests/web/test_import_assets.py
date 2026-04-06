@@ -53,7 +53,7 @@ def client(_test_engine, db_session):
 @pytest.fixture
 def admin_user(db_session):
     from app.auth import hash_password
-    user = User(username="admin", password_hash=hash_password("testpass123"))
+    user = User(username="admin", password_hash=hash_password("testpass123"), is_superadmin=True)
     db_session.add(user)
     db_session.commit()
     db_session.refresh(user)
