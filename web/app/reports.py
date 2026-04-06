@@ -1,5 +1,5 @@
 """Report data queries for different report scopes."""
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
@@ -13,7 +13,7 @@ def single_scan_report(db: Session, scan_id: str) -> dict | None:
         return None
     return {
         "title": f"Scan Report: {scan.asset.name} — {scan.profile.name}",
-        "generated_at": datetime.utcnow(),
+        "generated_at": datetime.now(timezone.utc),
         "scans": [scan],
         "results": scan.results,
         "summary": {
@@ -45,7 +45,7 @@ def asset_report(db: Session, asset_id: int, date_from: datetime | None = None, 
 
     return {
         "title": f"Asset Report: {asset.name} ({asset.address})",
-        "generated_at": datetime.utcnow(),
+        "generated_at": datetime.now(timezone.utc),
         "scans": scans,
         "results": all_results,
         "summary": {
@@ -72,7 +72,7 @@ def full_report(db: Session, date_from: datetime | None = None, date_to: datetim
 
     return {
         "title": "Full Scan Report",
-        "generated_at": datetime.utcnow(),
+        "generated_at": datetime.now(timezone.utc),
         "scans": scans,
         "results": all_results,
         "summary": {
