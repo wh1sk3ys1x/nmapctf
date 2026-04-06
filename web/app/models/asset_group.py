@@ -17,6 +17,7 @@ class AssetGroup(Base):
     __tablename__ = "asset_groups"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    org_id: Mapped[int | None] = mapped_column(ForeignKey("organizations.id"), default=None)
     name: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     description: Mapped[str | None] = mapped_column(Text, default=None)
     created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))
