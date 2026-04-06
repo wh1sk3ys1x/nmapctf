@@ -51,7 +51,8 @@ def run_scan(job_id: str, target: str, nmap_args: str) -> None:
                     })
 
         # Get raw XML output
-        raw_xml = scanner.get_nmap_last_output()
+        raw_xml_out = scanner.get_nmap_last_output()
+        raw_xml = raw_xml_out.decode("utf-8", errors="replace") if isinstance(raw_xml_out, bytes) else raw_xml_out
 
         _update_job(job_id, {
             "status": "completed",
