@@ -3,7 +3,15 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h1>Scan Detail</h1>
-  <a href="/scans" class="btn btn-outline-secondary">Back to History</a>
+  <div class="d-flex gap-2">
+    {% if can_edit and scan.status.value in ('pending', 'running') %}
+    <form method="post" action="/scans/{{ scan.id }}/cancel">
+      <button type="submit" class="btn btn-outline-danger"
+              onclick="return confirm('Cancel this scan?')">Cancel Scan</button>
+    </form>
+    {% endif %}
+    <a href="/scans" class="btn btn-outline-secondary">Back to History</a>
+  </div>
 </div>
 
 <div class="card mb-4">
