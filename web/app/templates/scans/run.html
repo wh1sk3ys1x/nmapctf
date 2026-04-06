@@ -7,15 +7,24 @@
   <div class="mb-3">
     <label class="form-label">Target</label>
     <div class="form-check">
-      <input class="form-check-input" type="radio" name="target_type" id="target_asset" value="asset" checked onchange="toggleTarget()">
-      <label class="form-check-label" for="target_asset">Single Asset</label>
+      <input class="form-check-input" type="radio" name="target_type" id="target_quick" value="quick" checked onchange="toggleTarget()">
+      <label class="form-check-label" for="target_quick">Quick Target</label>
+    </div>
+    <div class="form-check">
+      <input class="form-check-input" type="radio" name="target_type" id="target_asset" value="asset" onchange="toggleTarget()">
+      <label class="form-check-label" for="target_asset">Existing Asset</label>
     </div>
     <div class="form-check">
       <input class="form-check-input" type="radio" name="target_type" id="target_group" value="group" onchange="toggleTarget()">
       <label class="form-check-label" for="target_group">Asset Group</label>
     </div>
   </div>
-  <div class="mb-3" id="asset_field">
+  <div class="mb-3" id="quick_field">
+    <label for="quick_target" class="form-label">IP / Hostname / Subnet</label>
+    <input type="text" class="form-control" id="quick_target" name="quick_target" placeholder="e.g. 192.168.1.1 or example.com">
+    <div class="form-text">Enter any valid nmap target. An asset will be created automatically.</div>
+  </div>
+  <div class="mb-3" id="asset_field" style="display: none;">
     <label for="asset_id" class="form-label">Asset</label>
     <select class="form-select" id="asset_id" name="asset_id">
       <option value="">Select asset...</option>
@@ -47,11 +56,10 @@
 
 <script>
 function toggleTarget() {
-  const isGroup = document.getElementById('target_group').checked;
-  document.getElementById('asset_field').style.display = isGroup ? 'none' : '';
-  document.getElementById('group_field').style.display = isGroup ? '' : 'none';
-  document.getElementById('asset_id').required = !isGroup;
-  document.getElementById('asset_group_id').required = isGroup;
+  const mode = document.querySelector('input[name="target_type"]:checked').value;
+  document.getElementById('quick_field').style.display = mode === 'quick' ? '' : 'none';
+  document.getElementById('asset_field').style.display = mode === 'asset' ? '' : 'none';
+  document.getElementById('group_field').style.display = mode === 'group' ? '' : 'none';
 }
 </script>
 {% endblock %}
