@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Organizations — nmapctf{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1>Organizations</h1>
+  <a href="/orgs/new" class="btn btn-primary">New Organization</a>
+</div>
+
+<table class="table table-hover">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Slug</th>
+      <th>Members</th>
+      <th style="width: 180px;">Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for org in orgs %}
+    <tr id="org-{{ org.id }}">
+      <td><a href="/orgs/{{ org.id }}">{{ org.name }}</a></td>
+      <td><code>{{ org.slug }}</code></td>
+      <td><span class="badge bg-info">{{ org.users | length }}</span></td>
+      <td>
+        <a href="/orgs/{{ org.id }}/edit" class="btn btn-sm btn-outline-light">Edit</a>
+        <button class="btn btn-sm btn-outline-danger"
+                hx-delete="/orgs/{{ org.id }}"
+                hx-target="#org-{{ org.id }}"
+                hx-swap="outerHTML"
+                hx-confirm="Delete organization '{{ org.name }}'? This will remove all members.">Del</button>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4" class="text-muted text-center">No organizations yet. <a href="/orgs/new">Create one.</a></td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
