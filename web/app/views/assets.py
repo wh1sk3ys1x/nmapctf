@@ -1,8 +1,10 @@
+from typing import List
+
 from fastapi import APIRouter, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from app.api.deps import DbSession
-from app.models import Asset, AssetType
+from app.models import Asset, AssetType, AssetGroup
 from app.org_scope import org_filter, get_org_id, can_edit
 
 router = APIRouter(prefix="/assets", tags=["views"])
@@ -13,7 +15,8 @@ def list_assets(request: Request, db: DbSession):
     from app.main import templates
     query = org_filter(db.query(Asset), Asset, request)
     assets = query.order_by(Asset.name).all()
-    return templates.TemplateResponse(request, "assets/list.html", {"assets": assets})
+    groups = org_filter(db.query(AssetGroup), AssetGroup, request).order_by(AssetGroup.name).all()
+    return templates.TemplateResponse(request, "assets/list.html", {"assets": assets, "groups": groups})
 
 
 @router.get("/new", response_class=HTMLResponse)
@@ -88,3 +91,39 @@ def delete_asset(asset_id: int, request: Request, db: DbSession):
         db.delete(asset)
         db.commit()
     return HTMLResponse("")
+
+
+@router.post("/bulk-delete", response_class=HTMLResponse)
+def bulk_delete(request: Request, db: DbSession, asset_ids: List[str] = Form([])):
+    if not can_edit(request):
+        return RedirectResponse("/assets", status_code=303)
+    for aid in asset_ids:
+        if aid.strip():
+            asset = db.get(Asset, int(aid))
+            if asset:
+                db.delete(asset)
+    db.commit()
+    return RedirectResponse("/assets", status_code=303)
+
+
+@router.post("/bulk-add-to-group", response_class=HTMLResponse)
+def bulk_add_to_group(
+    request: Request,
+    db: DbSession,
+    asset_ids: List[str] = Form([]),
+    group_id: str = Form(""),
+):
+    if not can_edit(request):
+        return RedirectResponse("/assets", status_code=303)
+    if not group_id.strip():
+        return RedirectResponse("/assets", status_code=303)
+    group = db.get(AssetGroup, int(group_id))
+    if not group:
+        return RedirectResponse("/assets", status_code=303)
+    for aid in asset_ids:
+        if aid.strip():
+            asset = db.get(Asset, int(aid))
+            if asset and asset not in group.assets:
+                group.assets.append(asset)
+    db.commit()
+    return RedirectResponse("/assets", status_code=303)
