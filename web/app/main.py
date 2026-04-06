@@ -12,6 +12,7 @@ from app.database import Base, engine, SessionLocal
 from app.seed import seed_default_profiles
 from app.api import assets, profiles, scans, schedules, internal
 from app.api import auth as api_auth
+from app.api import asset_groups as api_asset_groups
 from app.views import dashboard as dashboard_views
 from app.views import assets as asset_views
 from app.views import profiles as profile_views
@@ -81,6 +82,7 @@ app.include_router(profiles.router, prefix="/api/v1")
 app.include_router(scans.router, prefix="/api/v1")
 app.include_router(schedules.router, prefix="/api/v1")
 app.include_router(internal.router, prefix="/api/v1")
+app.include_router(api_asset_groups.router, prefix="/api/v1")
 
 # View routers
 app.include_router(auth_views.router)
