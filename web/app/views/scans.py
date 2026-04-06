@@ -64,11 +64,14 @@ def run_scan_form(request: Request, db: DbSession):
 def run_scan(
     request: Request,
     db: DbSession,
-    asset_id: int | None = Form(None),
-    asset_group_id: int | None = Form(None),
-    quick_target: str | None = Form(None),
+    asset_id: str = Form(""),
+    asset_group_id: str = Form(""),
+    quick_target: str = Form(""),
     profile_id: int = Form(...),
 ):
+    # Convert empty strings to None, valid numbers to int
+    asset_id: int | None = int(asset_id) if asset_id.strip() else None
+    asset_group_id: int | None = int(asset_group_id) if asset_group_id.strip() else None
     if not can_edit(request):
         return RedirectResponse("/scans", status_code=303)
     profile = db.get(ScanProfile, profile_id)
@@ -76,7 +79,7 @@ def run_scan(
         return RedirectResponse("/scans/run", status_code=303)
 
     # Quick target: auto-create asset from typed address
-    if quick_target and quick_target.strip():
+    if quick_target.strip():
         address = quick_target.strip()
         org_id = get_org_id(request)
         # Reuse existing asset if address matches within this org
