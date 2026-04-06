@@ -46,7 +46,15 @@
       <td>{{ scan.trigger.value }}</td>
       <td>{{ scan.queued_at.strftime('%Y-%m-%d %H:%M') }}</td>
       <td>{{ scan.completed_at.strftime('%Y-%m-%d %H:%M') if scan.completed_at else '—' }}</td>
-      <td><a href="/scans/{{ scan.id }}" class="btn btn-sm btn-outline-light">View</a></td>
+      <td>
+        <a href="/scans/{{ scan.id }}" class="btn btn-sm btn-outline-light">View</a>
+        {% if can_edit and scan.status.value in ('pending', 'running') %}
+        <form method="post" action="/scans/{{ scan.id }}/cancel" class="d-inline">
+          <button type="submit" class="btn btn-sm btn-outline-danger"
+                  onclick="return confirm('Cancel this scan?')">Cancel</button>
+        </form>
+        {% endif %}
+      </td>
     </tr>
     {% else %}
     <tr><td colspan="7" class="text-muted text-center">No scans found.</td></tr>
