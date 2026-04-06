@@ -32,12 +32,12 @@
           <li class="nav-item"><a class="nav-link" href="/orgs">Organizations</a></li>
           {% endif %}
           <li class="nav-item">
-            <span class="nav-link" style="color: var(--text-muted);">
+            <a class="nav-link" href="/account" style="color: var(--text-muted);">
               {{ request.session.get("username", "") }}
               {% if request.session.get("is_superadmin") %}
               <span class="badge bg-danger">root</span>
               {% endif %}
-            </span>
+            </a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="/logout">Logout</a>
