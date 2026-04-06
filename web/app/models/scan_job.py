@@ -31,6 +31,7 @@ class ScanJob(Base):
     status: Mapped[ScanStatus] = mapped_column(Enum(ScanStatus), default=ScanStatus.pending)
     trigger: Mapped[ScanTrigger] = mapped_column(Enum(ScanTrigger), default=ScanTrigger.manual)
     schedule_id: Mapped[int | None] = mapped_column(ForeignKey("schedules.id"), default=None)
+    asset_group_id: Mapped[int | None] = mapped_column(ForeignKey("asset_groups.id"), default=None)
     queued_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))
     started_at: Mapped[datetime | None] = mapped_column(default=None)
     completed_at: Mapped[datetime | None] = mapped_column(default=None)

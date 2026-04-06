@@ -30,3 +30,6 @@ class Asset(Base):
 
     scan_jobs: Mapped[list["ScanJob"]] = relationship(back_populates="asset")  # noqa: F821
     schedules: Mapped[list["Schedule"]] = relationship(back_populates="asset")  # noqa: F821
+    groups: Mapped[list["AssetGroup"]] = relationship(  # noqa: F821
+        secondary="asset_group_members", back_populates="assets",
+    )
