@@ -7,16 +7,20 @@ MAX_WAIT=30
 
 echo "=== nmapctf deploy ==="
 
+# Pull latest code
+echo "[1/5] Pulling latest code..."
+git pull
+
 # Build images
-echo "[1/4] Building images..."
+echo "[2/5] Building images..."
 $COMPOSE build --quiet
 
 # Bring up the stack
-echo "[2/4] Starting containers..."
+echo "[3/5] Starting containers..."
 $COMPOSE up -d
 
 # Wait for health endpoint
-echo "[3/4] Waiting for web service..."
+echo "[4/5] Waiting for web service..."
 elapsed=0
 while [ $elapsed -lt $MAX_WAIT ]; do
   if curl -sf "$HEALTH_URL" > /dev/null 2>&1; then
@@ -27,7 +31,7 @@ while [ $elapsed -lt $MAX_WAIT ]; do
 done
 
 # Check result
-echo "[4/4] Verifying..."
+echo "[5/5] Verifying..."
 if curl -sf "$HEALTH_URL" > /dev/null 2>&1; then
   echo ""
   echo "  nmapctf is running at http://localhost:8080"
