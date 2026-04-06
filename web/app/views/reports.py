@@ -8,8 +8,8 @@ from fastapi.responses import HTMLResponse, StreamingResponse
 from weasyprint import HTML
 
 from app.api.deps import DbSession
-from app.models import Asset, ScanJob
-from app.reports import single_scan_report, asset_report, full_report
+from app.models import Asset, ScanJob, AssetGroup
+from app.reports import single_scan_report, asset_report, full_report, group_report
 
 router = APIRouter(prefix="/reports", tags=["views"])
 
@@ -25,12 +25,14 @@ def _parse_date(value: str | None):
         return None
 
 
-def _get_report(db, scope, scan_id, asset_id, date_from, date_to):
+def _get_report(db, scope, scan_id, asset_id, group_id, date_from, date_to):
     """Dispatch to the correct report function based on scope."""
     if scope == "scan" and scan_id:
         return single_scan_report(db, scan_id)
     elif scope == "asset" and asset_id:
         return asset_report(db, asset_id, _parse_date(date_from), _parse_date(date_to))
+    elif scope == "group" and group_id:
+        return group_report(db, group_id, _parse_date(date_from), _parse_date(date_to))
     else:
         return full_report(db, _parse_date(date_from), _parse_date(date_to))
 
@@ -39,9 +41,10 @@ def _get_report(db, scope, scan_id, asset_id, date_from, date_to):
 def report_index(request: Request, db: DbSession):
     from app.main import templates
     assets = db.query(Asset).order_by(Asset.name).all()
+    groups = db.query(AssetGroup).order_by(AssetGroup.name).all()
     scans = db.query(ScanJob).filter(ScanJob.status == "completed").order_by(ScanJob.queued_at.desc()).limit(50).all()
     return templates.TemplateResponse(
-        request, "reports/index.html", {"assets": assets, "scans": scans},
+        request, "reports/index.html", {"assets": assets, "groups": groups, "scans": scans},
     )
 
 
@@ -52,16 +55,17 @@ def report_html(
     scope: str = Query("all"),
     scan_id: str | None = Query(None),
     asset_id: int | None = Query(None),
+    group_id: int | None = Query(None),
     date_from: str | None = Query(None),
     date_to: str | None = Query(None),
 ):
     from app.main import templates
-    data = _get_report(db, scope, scan_id, asset_id, date_from, date_to)
+    data = _get_report(db, scope, scan_id, asset_id, group_id, date_from, date_to)
     if data is None:
         return HTMLResponse("Report not found", status_code=404)
     return templates.TemplateResponse(
         request, "reports/report.html",
-        {"report": data, "scope": scope, "scan_id": scan_id, "asset_id": asset_id, "date_from": date_from, "date_to": date_to},
+        {"report": data, "scope": scope, "scan_id": scan_id, "asset_id": asset_id, "group_id": group_id, "date_from": date_from, "date_to": date_to},
     )
 
 
@@ -72,11 +76,12 @@ def report_pdf(
     scope: str = Query("all"),
     scan_id: str | None = Query(None),
     asset_id: int | None = Query(None),
+    group_id: int | None = Query(None),
     date_from: str | None = Query(None),
     date_to: str | None = Query(None),
 ):
     from app.main import templates
-    data = _get_report(db, scope, scan_id, asset_id, date_from, date_to)
+    data = _get_report(db, scope, scan_id, asset_id, group_id, date_from, date_to)
     if data is None:
         return HTMLResponse("Report not found", status_code=404)
     html_str = templates.get_template("reports/report.html").render(
@@ -97,10 +102,11 @@ def report_csv(
     scope: str = Query("all"),
     scan_id: str | None = Query(None),
     asset_id: int | None = Query(None),
+    group_id: int | None = Query(None),
     date_from: str | None = Query(None),
     date_to: str | None = Query(None),
 ):
-    data = _get_report(db, scope, scan_id, asset_id, date_from, date_to)
+    data = _get_report(db, scope, scan_id, asset_id, group_id, date_from, date_to)
     if data is None:
         return HTMLResponse("Report not found", status_code=404)
     output = io.StringIO()
@@ -122,10 +128,11 @@ def report_json(
     scope: str = Query("all"),
     scan_id: str | None = Query(None),
     asset_id: int | None = Query(None),
+    group_id: int | None = Query(None),
     date_from: str | None = Query(None),
     date_to: str | None = Query(None),
 ):
-    data = _get_report(db, scope, scan_id, asset_id, date_from, date_to)
+    data = _get_report(db, scope, scan_id, asset_id, group_id, date_from, date_to)
     if data is None:
         return HTMLResponse("Report not found", status_code=404)
     rows = [

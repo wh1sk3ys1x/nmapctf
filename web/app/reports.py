@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
-from app.models import ScanJob, ScanResult, Asset, ScanProfile, ScanStatus
+from app.models import ScanJob, ScanResult, Asset, ScanProfile, ScanStatus, AssetGroup
 
 
 def single_scan_report(db: Session, scan_id: str) -> dict | None:
@@ -50,6 +50,49 @@ def asset_report(db: Session, asset_id: int, date_from: datetime | None = None, 
         "results": all_results,
         "summary": {
             "total_scans": len(scans),
+            "total_hosts": len(set(r.host for r in all_results)),
+            "total_ports": len(all_results),
+            "open_ports": sum(1 for r in all_results if r.state == "open"),
+        },
+    }
+
+
+def group_report(db: Session, group_id: int, date_from: datetime | None = None, date_to: datetime | None = None) -> dict | None:
+    """Report data for all scans of assets in a group."""
+    group = db.get(AssetGroup, group_id)
+    if not group:
+        return None
+    asset_ids = [a.id for a in group.assets]
+    if not asset_ids:
+        return {
+            "title": f"Group Report: {group.name}",
+            "generated_at": datetime.now(timezone.utc),
+            "scans": [],
+            "results": [],
+            "summary": {"total_scans": 0, "total_assets": 0, "total_hosts": 0, "total_ports": 0, "open_ports": 0},
+        }
+    query = db.query(ScanJob).filter(
+        ScanJob.asset_id.in_(asset_ids),
+        ScanJob.status == ScanStatus.completed,
+    )
+    if date_from:
+        query = query.filter(ScanJob.completed_at >= date_from)
+    if date_to:
+        query = query.filter(ScanJob.completed_at <= date_to)
+    scans = query.order_by(ScanJob.completed_at.desc()).all()
+
+    all_results = []
+    for scan in scans:
+        all_results.extend(scan.results)
+
+    return {
+        "title": f"Group Report: {group.name}",
+        "generated_at": datetime.now(timezone.utc),
+        "scans": scans,
+        "results": all_results,
+        "summary": {
+            "total_scans": len(scans),
+            "total_assets": len(set(s.asset_id for s in scans)),
             "total_hosts": len(set(r.host for r in all_results)),
             "total_ports": len(all_results),
             "open_ports": sum(1 for r in all_results if r.state == "open"),
