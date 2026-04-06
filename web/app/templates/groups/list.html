@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Asset Groups — nmapctf{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1>Asset Groups</h1>
+  <a href="/groups/new" class="btn btn-primary">New Group</a>
+</div>
+
+<table class="table table-hover">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Description</th>
+      <th>Members</th>
+      <th style="width: 180px;">Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for group in groups %}
+    <tr id="group-{{ group.id }}">
+      <td><a href="/groups/{{ group.id }}">{{ group.name }}</a></td>
+      <td>{{ group.description or '—' }}</td>
+      <td><span class="badge bg-info">{{ group.assets | length }}</span></td>
+      <td>
+        <a href="/groups/{{ group.id }}/edit" class="btn btn-sm btn-outline-light">Edit</a>
+        <button class="btn btn-sm btn-outline-danger"
+                hx-delete="/groups/{{ group.id }}"
+                hx-target="#group-{{ group.id }}"
+                hx-swap="outerHTML"
+                hx-confirm="Delete group '{{ group.name }}'?">Del</button>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4" class="text-muted text-center">No groups yet. <a href="/groups/new">Create one.</a></td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

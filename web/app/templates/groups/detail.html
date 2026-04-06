@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}{{ group.name }} — nmapctf{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1>{{ group.name }}</h1>
+    {% if group.description %}<p class="text-muted">{{ group.description }}</p>{% endif %}
+  </div>
+  <a href="/groups/{{ group.id }}/edit" class="btn btn-outline-light">Edit Group</a>
+</div>
+
+<h3>Members <span class="badge bg-info">{{ group.assets | length }}</span></h3>
+
+{% if available_assets %}
+<form method="post" action="/groups/{{ group.id }}/members" class="mb-3 d-flex gap-2" style="max-width: 400px;">
+  <select class="form-select" name="asset_id" required>
+    <option value="">Add asset...</option>
+    {% for asset in available_assets %}
+    <option value="{{ asset.id }}">{{ asset.name }} ({{ asset.address }})</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="btn btn-primary">Add</button>
+</form>
+{% endif %}
+
+<table class="table table-hover">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Address</th>
+      <th style="width: 100px;">Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for asset in group.assets %}
+    <tr id="member-{{ asset.id }}">
+      <td>{{ asset.name }}</td>
+      <td><span class="badge bg-secondary">{{ asset.type.value }}</span></td>
+      <td><code>{{ asset.address }}</code></td>
+      <td>
+        <button class="btn btn-sm btn-outline-danger"
+                hx-delete="/groups/{{ group.id }}/members/{{ asset.id }}"
+                hx-target="#member-{{ asset.id }}"
+                hx-swap="outerHTML"
+                hx-confirm="Remove '{{ asset.name }}' from group?">Remove</button>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4" class="text-muted text-center">No members yet. Add assets above.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
