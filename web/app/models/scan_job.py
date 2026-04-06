@@ -42,4 +42,4 @@ class ScanJob(Base):
     asset: Mapped["Asset"] = relationship(back_populates="scan_jobs")  # noqa: F821
     profile: Mapped["ScanProfile"] = relationship(back_populates="scan_jobs")  # noqa: F821
     schedule: Mapped["Schedule | None"] = relationship()  # noqa: F821
-    results: Mapped[list["ScanResult"]] = relationship(back_populates="job")  # noqa: F821
+    results: Mapped[list["ScanResult"]] = relationship(back_populates="job", cascade="all, delete-orphan")  # noqa: F821
