@@ -39,7 +39,9 @@
   </thead>
   <tbody>
     {% for scan in scans %}
-    <tr>
+    {% set open_ports = scan.results | selectattr('state', 'equalto', 'open') | list | length %}
+    {% set total_ports = scan.results | length %}
+    <tr style="cursor: pointer;" onclick="window.location='/scans/{{ scan.id }}'">
       <td>{{ scan.asset.name }}</td>
       <td>{{ scan.profile.name }}</td>
       <td><span class="scan-status-{{ scan.status.value }}">{{ scan.status.value }}</span></td>
@@ -47,9 +49,20 @@
       <td>{{ scan.queued_at.strftime('%Y-%m-%d %H:%M') }}</td>
       <td>{{ scan.completed_at.strftime('%Y-%m-%d %H:%M') if scan.completed_at else '—' }}</td>
       <td>
-        <a href="/scans/{{ scan.id }}" class="btn btn-sm btn-outline-light">View</a>
+        {% if total_ports > 0 %}
+          <span class="badge bg-success">{{ open_ports }} open</span>
+          {% if total_ports > open_ports %}
+          <span class="badge bg-secondary">{{ total_ports - open_ports }} other</span>
+          {% endif %}
+        {% elif scan.status.value == 'completed' %}
+          <span class="text-muted">No ports found</span>
+        {% elif scan.status.value in ('pending', 'running') %}
+          <span class="text-muted">—</span>
+        {% else %}
+          <span class="text-muted">—</span>
+        {% endif %}
         {% if can_edit and scan.status.value in ('pending', 'running') %}
-        <form method="post" action="/scans/{{ scan.id }}/cancel" class="d-inline">
+        <form method="post" action="/scans/{{ scan.id }}/cancel" class="d-inline" onclick="event.stopPropagation()">
           <button type="submit" class="btn btn-sm btn-outline-danger"
                   onclick="return confirm('Cancel this scan?')">Cancel</button>
         </form>
