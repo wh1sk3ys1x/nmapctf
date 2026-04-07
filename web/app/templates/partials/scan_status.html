@@ -1,26 +1,25 @@
-<span id="scan-status-badge"
-      class="scan-status-{{ scan.status.value }}"
-      {% if scan.status.value in ('pending', 'running') %}
-      hx-get="/scans/{{ scan.id }}/status"
-      hx-trigger="every 3s"
-      hx-swap="outerHTML"
-      {% endif %}>
-  {{ scan.status.value }}
-</span>
-{% if scan.status.value == 'running' %}
-<div class="mt-2" id="scan-progress">
-  <div class="progress" style="height: 20px;">
-    <div class="progress-bar progress-bar-striped progress-bar-animated bg-info"
-         role="progressbar"
-         style="width: {{ scan.progress }}%"
-         aria-valuenow="{{ scan.progress }}"
-         aria-valuemin="0"
-         aria-valuemax="100">
-      {{ scan.progress }}%
+<div id="scan-status-badge"
+     {% if scan.status.value in ('pending', 'running') %}
+     hx-get="/scans/{{ scan.id }}/status"
+     hx-trigger="every 3s"
+     hx-swap="outerHTML"
+     {% endif %}>
+  <span class="scan-status-{{ scan.status.value }}">{{ scan.status.value }}</span>
+  {% if scan.status.value == 'running' and scan.progress > 0 %}
+  <div class="mt-2">
+    <div class="progress" style="height: 20px;">
+      <div class="progress-bar progress-bar-striped progress-bar-animated bg-info"
+           role="progressbar"
+           style="width: {{ scan.progress }}%"
+           aria-valuenow="{{ scan.progress }}"
+           aria-valuemin="0"
+           aria-valuemax="100">
+        {{ scan.progress }}%
+      </div>
     </div>
+    {% if scan.progress_phase %}
+    <small class="text-muted">{{ scan.progress_phase }}</small>
+    {% endif %}
   </div>
-  {% if scan.progress_phase %}
-  <small class="text-muted">{{ scan.progress_phase }}</small>
   {% endif %}
 </div>
-{% endif %}

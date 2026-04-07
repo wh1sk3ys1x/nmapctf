@@ -21,12 +21,7 @@
       <div class="col-md-3"><strong>Profile:</strong> {{ scan.profile.name }}</div>
       <div class="col-md-3">
         <strong>Status:</strong>
-        <span id="scan-status-badge"
-              hx-get="/scans/{{ scan.id }}/status"
-              hx-trigger="{{ 'every 3s' if scan.status.value in ('pending', 'running') else 'none' }}"
-              hx-swap="outerHTML">
-          {% include "partials/scan_status.html" %}
-        </span>
+        {% include "partials/scan_status.html" %}
       </div>
       <div class="col-md-3"><strong>Trigger:</strong> {{ scan.trigger.value }}</div>
     </div>
