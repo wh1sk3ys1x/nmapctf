@@ -52,6 +52,10 @@ def update_scan_results(
         job.raw_xml = body.raw_xml
 
         if body.results:
+            # Clear partial results and replace with full results (includes service/version)
+            for r in job.results:
+                db.delete(r)
+            db.flush()
             for r in body.results:
                 db.add(ScanResult(
                     job_id=scan_id,
@@ -67,6 +71,47 @@ def update_scan_results(
         job.status = ScanStatus.failed
         job.completed_at = now
         job.error_message = body.error_message
+
+    db.commit()
+    return {"status": "ok"}
+
+
+class PartialResultsPayload(BaseModel):
+    results: list[dict]
+
+
+@router.post("/scans/{scan_id}/partial")
+def push_partial_results(
+    scan_id: str,
+    body: PartialResultsPayload,
+    db: DbSession,
+    authorization: str = Header(...),
+):
+    """Accept partial results (discovered ports) while scan is still running."""
+    _verify_scanner_token(authorization)
+
+    job = db.get(ScanJob, scan_id)
+    if not job:
+        raise HTTPException(404, "Scan job not found")
+
+    # Build set of existing (host, port, protocol) to avoid duplicates
+    existing = {
+        (r.host, r.port, r.protocol) for r in job.results
+    }
+
+    for r in body.results:
+        key = (r["host"], r["port"], r["protocol"])
+        if key not in existing:
+            db.add(ScanResult(
+                job_id=scan_id,
+                host=r["host"],
+                port=r["port"],
+                protocol=r["protocol"],
+                state=r.get("state", "open"),
+                service=r.get("service"),
+                version=r.get("version"),
+            ))
+            existing.add(key)
 
     db.commit()
     return {"status": "ok"}

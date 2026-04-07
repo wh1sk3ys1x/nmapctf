@@ -182,3 +182,15 @@ def scan_status_partial(scan_id: str, db: DbSession, request: Request):
     return templates.TemplateResponse(
         request, "partials/scan_status.html", {"scan": scan},
     )
+
+
+@router.get("/{scan_id}/results", response_class=HTMLResponse)
+def scan_results_partial(scan_id: str, db: DbSession, request: Request):
+    """HTMX endpoint for polling scan results while running."""
+    from app.main import templates
+    scan = db.get(ScanJob, scan_id)
+    if not scan:
+        return HTMLResponse("")
+    return templates.TemplateResponse(
+        request, "partials/scan_results.html", {"scan": scan},
+    )
