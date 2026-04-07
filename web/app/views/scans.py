@@ -115,7 +115,7 @@ def run_scan(
                 queue.enqueue(
                     "tasks.run_scan",
                     job.id, addr, nmap_args,
-                    job_timeout="30m",
+                    job_timeout="2h",
                 )
         return RedirectResponse("/scans", status_code=303)
     else:
@@ -135,7 +135,7 @@ def run_scan(
             queue.enqueue(
                 "tasks.run_scan",
                 job.id, addr, nmap_args,
-                job_timeout="30m",
+                job_timeout="2h",
             )
         if len(addresses) == 1:
             return RedirectResponse(f"/scans/{first_job_id}", status_code=303)
