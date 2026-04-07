@@ -51,7 +51,12 @@
       {% endif %}
       <td>{{ asset.name }}</td>
       <td><span class="badge bg-secondary">{{ asset.type.value }}</span></td>
-      <td><code>{{ asset.address }}</code></td>
+      <td>
+        <code>{{ asset.address }}</code>
+        {% if asset.addresses | length > 1 %}
+        <span class="badge bg-info ms-1" title="{{ asset.addresses | length }} addresses">+{{ asset.addresses | length - 1 }}</span>
+        {% endif %}
+      </td>
       <td>{{ asset.notes or '' }}</td>
       {% if can_edit %}
       <td>

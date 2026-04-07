@@ -191,3 +191,29 @@ class TestAddRemoveAddresses:
 
         db_session.refresh(asset)
         assert len(asset.addresses) == 1  # primary still there
+
+
+class TestAssetListBadge:
+    def test_single_address_no_badge(self, authed_client, db_session):
+        asset = Asset(name="single", type=AssetType.ip, address="10.0.0.1")
+        db_session.add(asset)
+        db_session.flush()
+        db_session.add(AssetAddress(asset_id=asset.id, address="10.0.0.1", is_primary=True))
+        db_session.commit()
+
+        resp = authed_client.get("/assets")
+        assert resp.status_code == 200
+        assert "+1" not in resp.text  # no badge for single address
+
+    def test_multi_address_shows_badge(self, authed_client, db_session):
+        asset = Asset(name="multi", type=AssetType.ip, address="10.0.0.1")
+        db_session.add(asset)
+        db_session.flush()
+        db_session.add(AssetAddress(asset_id=asset.id, address="10.0.0.1", is_primary=True))
+        db_session.add(AssetAddress(asset_id=asset.id, address="10.0.0.2", is_primary=False))
+        db_session.add(AssetAddress(asset_id=asset.id, address="10.0.0.3", is_primary=False))
+        db_session.commit()
+
+        resp = authed_client.get("/assets")
+        assert resp.status_code == 200
+        assert "+2" in resp.text
