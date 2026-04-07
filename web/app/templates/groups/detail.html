@@ -37,7 +37,13 @@
     <tr id="member-{{ asset.id }}">
       <td>{{ asset.name }}</td>
       <td><span class="badge bg-secondary">{{ asset.type.value }}</span></td>
-      <td><code>{{ asset.address }}</code></td>
+      <td>
+        <code>{{ asset.address }}</code>
+        {% for addr in asset.addresses if not addr.is_primary %}
+        <br><code class="text-muted">{{ addr.address }}</code>
+        {% if addr.label %}<small class="text-muted">({{ addr.label }})</small>{% endif %}
+        {% endfor %}
+      </td>
       {% if can_edit %}
       <td>
         <button class="btn btn-sm btn-outline-danger"

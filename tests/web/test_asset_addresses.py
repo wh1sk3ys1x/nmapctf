@@ -12,7 +12,7 @@ from unittest.mock import patch
 
 from app.database import Base, get_db
 from app.main import app
-from app.models import Asset, AssetType, AssetAddress, User
+from app.models import Asset, AssetType, AssetAddress, AssetGroup, User
 
 
 @pytest.fixture
@@ -217,3 +217,24 @@ class TestAssetListBadge:
         resp = authed_client.get("/assets")
         assert resp.status_code == 200
         assert "+2" in resp.text
+
+
+class TestGroupDetailAddresses:
+    def test_group_detail_shows_all_addresses(self, authed_client, db_session):
+        asset = Asset(name="grouped-server", type=AssetType.ip, address="10.0.0.1")
+        db_session.add(asset)
+        db_session.flush()
+        db_session.add(AssetAddress(asset_id=asset.id, address="10.0.0.1", label="primary", is_primary=True))
+        db_session.add(AssetAddress(asset_id=asset.id, address="10.0.0.2", label="failover", is_primary=False))
+        db_session.commit()
+
+        group = AssetGroup(name="test-group")
+        db_session.add(group)
+        db_session.flush()
+        group.assets.append(asset)
+        db_session.commit()
+
+        resp = authed_client.get(f"/groups/{group.id}")
+        assert resp.status_code == 200
+        assert "10.0.0.1" in resp.text
+        assert "10.0.0.2" in resp.text
