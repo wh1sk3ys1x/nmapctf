@@ -9,7 +9,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, StaticPool
 from sqlalchemy.orm import sessionmaker
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 from app.database import Base, get_db
 from app.main import app
@@ -365,3 +365,30 @@ class TestGroupDetailAddresses:
         assert resp.status_code == 200
         assert "10.0.0.1" in resp.text
         assert "10.0.0.2" in resp.text
+
+
+class TestQuickTargetAddress:
+    @pytest.fixture
+    def profile(self, db_session):
+        from app.models import ScanProfile
+        p = ScanProfile(name="QT Scan", nmap_args="-T4 -F", is_default=False)
+        db_session.add(p)
+        db_session.commit()
+        db_session.refresh(p)
+        return p
+
+    @patch("app.views.scans._get_queue")
+    def test_quick_target_creates_asset_address(self, mock_queue, authed_client, db_session, profile):
+        mock_queue.return_value = MagicMock()
+
+        resp = authed_client.post("/scans/run", data={
+            "asset_id": "", "asset_group_id": "", "quick_target": "192.168.5.5",
+            "profile_id": str(profile.id),
+        }, follow_redirects=False)
+        assert resp.status_code == 303
+
+        asset = db_session.query(Asset).filter_by(address="192.168.5.5").first()
+        assert asset is not None
+        assert len(asset.addresses) == 1
+        assert asset.addresses[0].address == "192.168.5.5"
+        assert asset.addresses[0].is_primary is True

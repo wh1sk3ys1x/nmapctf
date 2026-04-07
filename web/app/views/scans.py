@@ -91,6 +91,9 @@ def run_scan(
             db.add(asset)
             db.commit()
             db.refresh(asset)
+            from app.models import AssetAddress
+            db.add(AssetAddress(asset_id=asset.id, address=address, is_primary=True))
+            db.commit()
             asset_id = asset.id
 
     if asset_group_id:
