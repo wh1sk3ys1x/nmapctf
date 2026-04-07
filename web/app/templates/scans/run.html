@@ -26,12 +26,21 @@
   </div>
   <div class="mb-3" id="asset_field" style="display: none;">
     <label for="asset_id" class="form-label">Asset</label>
-    <select class="form-select" id="asset_id" name="asset_id">
+    <select class="form-select" id="asset_id" name="asset_id" onchange="updateAddressSelection()">
       <option value="">Select asset...</option>
       {% for asset in assets %}
-      <option value="{{ asset.id }}">{{ asset.name }} ({{ asset.address }})</option>
+      <option value="{{ asset.id }}"
+              data-addresses='{{ asset.addresses | map(attribute="address") | list | tojson }}'
+              data-labels='{{ asset.addresses | map(attribute="label") | list | tojson }}'>
+        {{ asset.name }} ({{ asset.address }}){% if asset.addresses | length > 1 %} +{{ asset.addresses | length - 1 }}{% endif %}
+      </option>
       {% endfor %}
     </select>
+  </div>
+  <div class="mb-3" id="address_selection" style="display: none;">
+    <label class="form-label">Addresses to scan</label>
+    <div id="address_checkboxes"></div>
+    <div class="form-text">All addresses will be scanned (one scan job per address).</div>
   </div>
   <div class="mb-3" id="group_field" style="display: none;">
     <label for="asset_group_id" class="form-label">Asset Group</label>
@@ -60,6 +69,33 @@ function toggleTarget() {
   document.getElementById('quick_field').style.display = mode === 'quick' ? '' : 'none';
   document.getElementById('asset_field').style.display = mode === 'asset' ? '' : 'none';
   document.getElementById('group_field').style.display = mode === 'group' ? '' : 'none';
+  if (mode !== 'asset') document.getElementById('address_selection').style.display = 'none';
+}
+
+function updateAddressSelection() {
+  const select = document.getElementById('asset_id');
+  const option = select.options[select.selectedIndex];
+  const container = document.getElementById('address_selection');
+  const checkboxes = document.getElementById('address_checkboxes');
+
+  if (!option || !option.value) {
+    container.style.display = 'none';
+    return;
+  }
+
+  const addresses = JSON.parse(option.dataset.addresses || '[]');
+  const labels = JSON.parse(option.dataset.labels || '[]');
+
+  if (addresses.length <= 1) {
+    container.style.display = 'none';
+    return;
+  }
+
+  container.style.display = '';
+  checkboxes.innerHTML = addresses.map((addr, i) => {
+    const label = labels[i] ? ' <small class="text-muted">(' + labels[i] + ')</small>' : '';
+    return '<div class="form-text"><code>' + addr + '</code>' + label + '</div>';
+  }).join('');
 }
 </script>
 {% endblock %}
