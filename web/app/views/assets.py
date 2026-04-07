@@ -4,7 +4,7 @@ from fastapi import APIRouter, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from app.api.deps import DbSession
-from app.models import Asset, AssetType, AssetGroup
+from app.models import Asset, AssetType, AssetGroup, AssetAddress
 from app.org_scope import org_filter, get_org_id, can_edit
 
 router = APIRouter(prefix="/assets", tags=["views"])
@@ -42,6 +42,10 @@ def create_asset(
         return RedirectResponse("/assets", status_code=303)
     asset = Asset(name=name, type=AssetType(type), address=address, notes=notes or None, org_id=get_org_id(request))
     db.add(asset)
+    db.commit()
+    db.refresh(asset)
+    primary_addr = AssetAddress(asset_id=asset.id, address=address, is_primary=True)
+    db.add(primary_addr)
     db.commit()
     return RedirectResponse("/assets", status_code=303)
 
@@ -114,6 +118,12 @@ def update_asset(
     asset.type = AssetType(type)
     asset.address = address
     asset.notes = notes or None
+    # Sync primary AssetAddress
+    primary = next((a for a in asset.addresses if a.is_primary), None)
+    if primary:
+        primary.address = address
+    else:
+        db.add(AssetAddress(asset_id=asset.id, address=address, is_primary=True))
     db.commit()
     return RedirectResponse("/assets", status_code=303)
 
