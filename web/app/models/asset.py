@@ -34,3 +34,6 @@ class Asset(Base):
     groups: Mapped[list["AssetGroup"]] = relationship(  # noqa: F821
         secondary="asset_group_members", back_populates="assets",
     )
+    addresses: Mapped[list["AssetAddress"]] = relationship(  # noqa: F821
+        back_populates="asset", cascade="all, delete-orphan",
+    )
