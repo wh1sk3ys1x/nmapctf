@@ -68,6 +68,7 @@ def run_scan(
     asset_group_id: str = Form(""),
     quick_target: str = Form(""),
     profile_id: int = Form(...),
+    skip_ping: str = Form(""),
 ):
     # Convert empty strings to None, valid numbers to int
     asset_id: int | None = int(asset_id) if asset_id.strip() else None
@@ -77,6 +78,9 @@ def run_scan(
     profile = db.get(ScanProfile, profile_id)
     if not profile:
         return RedirectResponse("/scans/run", status_code=303)
+    nmap_args = profile.nmap_args
+    if skip_ping.strip():
+        nmap_args = f"-Pn {nmap_args}"
 
     # Quick target: auto-create asset from typed address
     if quick_target.strip():
@@ -110,7 +114,7 @@ def run_scan(
                 db.refresh(job)
                 queue.enqueue(
                     "tasks.run_scan",
-                    job.id, addr, profile.nmap_args,
+                    job.id, addr, nmap_args,
                     job_timeout="30m",
                 )
         return RedirectResponse("/scans", status_code=303)
@@ -130,7 +134,7 @@ def run_scan(
                 first_job_id = job.id
             queue.enqueue(
                 "tasks.run_scan",
-                job.id, addr, profile.nmap_args,
+                job.id, addr, nmap_args,
                 job_timeout="30m",
             )
         if len(addresses) == 1:

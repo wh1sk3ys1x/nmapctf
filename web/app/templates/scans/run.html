@@ -60,6 +60,11 @@
       {% endfor %}
     </select>
   </div>
+  <div class="mb-3 form-check">
+    <input class="form-check-input" type="checkbox" id="skip_ping" name="skip_ping" value="1">
+    <label class="form-check-label" for="skip_ping">Skip host discovery (-Pn)</label>
+    <div class="form-text">Treat all hosts as online. Use when targets don't respond to ping.</div>
+  </div>
   <button type="submit" class="btn btn-primary">Start Scan</button>
 </form>
 
