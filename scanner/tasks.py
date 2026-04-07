@@ -20,6 +20,15 @@ _DISCOVERED_RE = re.compile(
     r"Discovered open port (\d+)/(tcp|udp) on (.+)"
 )
 
+# Regex for nmap progress lines
+# Example: "About 23.45% done; ETC: 14:32 (0:00:16 remaining)"
+_PROGRESS_RE = re.compile(r"About (\d+(?:\.\d+)?)% done")
+
+# Regex for scan phase lines
+# Example: "SYN Stealth Scan Timing: About 23.45% done"
+# Example: "Initiating SYN Stealth Scan at 14:30"
+_PHASE_RE = re.compile(r"Initiating (.+?) at \d")
+
 
 def _api_headers() -> dict:
     return {"Authorization": f"Bearer {SCANNER_API_TOKEN}"}
@@ -36,6 +45,16 @@ def _push_partial(job_id: str, results: list[dict]) -> None:
     """Push partial results (discovered ports) to the web API."""
     url = f"{WEB_API_URL}/internal/scans/{job_id}/partial"
     resp = httpx.post(url, json={"results": results}, headers=_api_headers(), timeout=30)
+    resp.raise_for_status()
+
+
+def _push_progress(job_id: str, progress: int, phase: str | None = None) -> None:
+    """Push scan progress percentage to the web API."""
+    url = f"{WEB_API_URL}/internal/scans/{job_id}/progress"
+    payload = {"progress": progress}
+    if phase:
+        payload["phase"] = phase
+    resp = httpx.post(url, json=payload, headers=_api_headers(), timeout=10)
     resp.raise_for_status()
 
 
@@ -126,9 +145,9 @@ def run_scan(job_id: str, target: str, nmap_args: str) -> None:
         os.close(fd)
         xml_file = xml_path
 
-        # Build nmap command: add -v for verbose discovery output, -oX for XML
+        # Build nmap command: -v for verbose discovery, --stats-every for progress, -oX for XML
         nmap_bin = _find_nmap()
-        cmd = [nmap_bin] + nmap_args.split() + ["-v", "-oX", xml_path, target]
+        cmd = [nmap_bin] + nmap_args.split() + ["-v", "--stats-every", "5s", "-oX", xml_path, target]
         logger.info("Running: %s", " ".join(cmd))
 
         proc = subprocess.Popen(
@@ -141,10 +160,26 @@ def run_scan(job_id: str, target: str, nmap_args: str) -> None:
         # Buffer for batching partial results
         partial_batch = []
         seen_ports = set()
+        current_phase = None
 
         for line in proc.stdout:
             line = line.strip()
             if not line:
+                continue
+
+            # Check for phase changes (e.g., "Initiating SYN Stealth Scan at 14:30")
+            phase_match = _PHASE_RE.search(line)
+            if phase_match:
+                current_phase = phase_match.group(1)
+
+            # Check for progress updates (e.g., "About 23.45% done")
+            progress_match = _PROGRESS_RE.search(line)
+            if progress_match:
+                pct = int(float(progress_match.group(1)))
+                try:
+                    _push_progress(job_id, pct, current_phase)
+                except Exception:
+                    logger.warning("Failed to push progress for %s", job_id)
                 continue
 
             match = _DISCOVERED_RE.search(line)

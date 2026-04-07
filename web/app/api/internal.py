@@ -76,6 +76,32 @@ def update_scan_results(
     return {"status": "ok"}
 
 
+class ProgressPayload(BaseModel):
+    progress: int
+    phase: str | None = None
+
+
+@router.post("/scans/{scan_id}/progress")
+def update_scan_progress(
+    scan_id: str,
+    body: ProgressPayload,
+    db: DbSession,
+    authorization: str = Header(...),
+):
+    """Accept progress updates from the scanner."""
+    _verify_scanner_token(authorization)
+
+    job = db.get(ScanJob, scan_id)
+    if not job:
+        raise HTTPException(404, "Scan job not found")
+
+    job.progress = body.progress
+    if body.phase:
+        job.progress_phase = body.phase
+    db.commit()
+    return {"status": "ok"}
+
+
 class PartialResultsPayload(BaseModel):
     results: list[dict]
 

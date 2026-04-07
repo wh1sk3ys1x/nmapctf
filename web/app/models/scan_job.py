@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import String, Text, Enum, ForeignKey
+from sqlalchemy import String, Text, Integer, Enum, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -38,6 +38,8 @@ class ScanJob(Base):
     completed_at: Mapped[datetime | None] = mapped_column(default=None)
     error_message: Mapped[str | None] = mapped_column(Text, default=None)
     raw_xml: Mapped[str | None] = mapped_column(Text, default=None)
+    progress: Mapped[int] = mapped_column(Integer, default=0)
+    progress_phase: Mapped[str | None] = mapped_column(String(100), default=None)
 
     asset: Mapped["Asset"] = relationship(back_populates="scan_jobs")  # noqa: F821
     profile: Mapped["ScanProfile"] = relationship(back_populates="scan_jobs")  # noqa: F821

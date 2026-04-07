@@ -7,3 +7,20 @@
       {% endif %}>
   {{ scan.status.value }}
 </span>
+{% if scan.status.value == 'running' %}
+<div class="mt-2" id="scan-progress">
+  <div class="progress" style="height: 20px;">
+    <div class="progress-bar progress-bar-striped progress-bar-animated bg-info"
+         role="progressbar"
+         style="width: {{ scan.progress }}%"
+         aria-valuenow="{{ scan.progress }}"
+         aria-valuemin="0"
+         aria-valuemax="100">
+      {{ scan.progress }}%
+    </div>
+  </div>
+  {% if scan.progress_phase %}
+  <small class="text-muted">{{ scan.progress_phase }}</small>
+  {% endif %}
+</div>
+{% endif %}
