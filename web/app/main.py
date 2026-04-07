@@ -27,10 +27,29 @@ from app.views import import_assets as import_views
 BASE_DIR = Path(__file__).resolve().parent
 
 
+def _migrate_schema():
+    """Add columns that may be missing from older databases."""
+    import sqlalchemy
+    with engine.connect() as conn:
+        inspector = sqlalchemy.inspect(engine)
+        # scan_jobs: progress, progress_phase
+        existing = {c["name"] for c in inspector.get_columns("scan_jobs")}
+        if "progress" not in existing:
+            conn.execute(sqlalchemy.text(
+                "ALTER TABLE scan_jobs ADD COLUMN progress INTEGER NOT NULL DEFAULT 0"
+            ))
+        if "progress_phase" not in existing:
+            conn.execute(sqlalchemy.text(
+                "ALTER TABLE scan_jobs ADD COLUMN progress_phase VARCHAR(100)"
+            ))
+        conn.commit()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Create tables and seed defaults on startup
     Base.metadata.create_all(bind=engine)
+    _migrate_schema()
     db = SessionLocal()
     try:
         seed_default_profiles(db)
