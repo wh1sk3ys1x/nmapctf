@@ -26,6 +26,14 @@
       </div>
     </div>
     <div class="col-auto">
+      <div class="card text-bg-info" style="width: 10rem;">
+        <div class="card-body text-center">
+          <h2>{{ results.merged | length if results.merged else 0 }}</h2>
+          <p class="mb-0">Addresses Added</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-auto">
       <div class="card text-bg-secondary" style="width: 10rem;">
         <div class="card-body text-center">
           <h2>{{ results.total }}</h2>
@@ -58,6 +66,18 @@
     <tbody>
       {% for item in results.skipped %}
       <tr><td><code>{{ item.address }}</code></td><td>{{ item.reason }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  {% if results.merged %}
+  <h5>Addresses Added to Existing Assets</h5>
+  <table class="table table-sm">
+    <thead><tr><th>Asset</th><th>Address Added</th></tr></thead>
+    <tbody>
+      {% for item in results.merged %}
+      <tr><td>{{ item.name }}</td><td><code>{{ item.address }}</code></td></tr>
       {% endfor %}
     </tbody>
   </table>

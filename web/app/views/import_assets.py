@@ -6,7 +6,7 @@ from fastapi import APIRouter, Request, Form, UploadFile, File
 from fastapi.responses import HTMLResponse
 
 from app.api.deps import DbSession
-from app.models import Asset, AssetType, AssetGroup
+from app.models import Asset, AssetType, AssetGroup, AssetAddress
 from app.org_scope import get_org_id, org_filter, can_edit
 
 router = APIRouter(prefix="/assets", tags=["views"])
@@ -114,13 +114,16 @@ async def import_assets(
     # Process entries
     created = []
     skipped = []
+    merged = []
     existing_addresses = {a.address for a in org_filter(db.query(Asset.address), Asset, request).all()}
+
+    # Build name lookup for existing assets (for merge-by-name)
+    existing_assets_by_name = {}
+    for a in org_filter(db.query(Asset), Asset, request).all():
+        existing_assets_by_name[a.name] = a
 
     for entry in entries:
         address = entry["address"]
-        if address in existing_addresses:
-            skipped.append({"address": address, "reason": "already exists"})
-            continue
 
         name = (
             entry.get("name")
@@ -131,6 +134,22 @@ async def import_assets(
             or entry.get("description")
             or f"asset-{address}"
         )
+
+        # Check if an asset with this name already exists — merge address
+        if name in existing_assets_by_name:
+            existing_asset = existing_assets_by_name[name]
+            existing_asset_addrs = {a.address for a in existing_asset.addresses}
+            if address not in existing_asset_addrs:
+                db.add(AssetAddress(asset_id=existing_asset.id, address=address, is_primary=False))
+                merged.append({"name": name, "address": address})
+            else:
+                skipped.append({"address": address, "reason": "address already on asset"})
+            continue
+
+        if address in existing_addresses:
+            skipped.append({"address": address, "reason": "already exists"})
+            continue
+
         asset_type = _resolve_type(entry.get("type"), default_type)
 
         asset = Asset(
@@ -143,7 +162,10 @@ async def import_assets(
         db.add(asset)
         try:
             db.flush()
+            # Seed primary AssetAddress
+            db.add(AssetAddress(asset_id=asset.id, address=address, is_primary=True))
             existing_addresses.add(address)
+            existing_assets_by_name[name] = asset
             created.append(asset)
         except Exception:
             db.rollback()
@@ -167,6 +189,7 @@ async def import_assets(
             "groups": groups, "asset_types": asset_types,
             "results": {
                 "created": [{"name": a.name, "address": a.address} for a in created],
+                "merged": [{"name": m["name"], "address": m["address"]} for m in merged],
                 "skipped": skipped,
                 "total": len(entries),
                 "group_name": group.name if group else None,

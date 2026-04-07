@@ -1,4 +1,5 @@
 """Tests for AssetAddress model and Asset relationship."""
+import io
 import os
 
 os.environ["DATABASE_URL"] = "sqlite:///test_nmapctf.db"
@@ -297,6 +298,52 @@ class TestMultiAddressScan:
         }, follow_redirects=False)
         assert resp.status_code == 303
         assert mock_q.enqueue.call_count == 2
+
+
+class TestImportMergeAddresses:
+    def test_import_new_asset_creates_asset_address(self, authed_client, db_session):
+        csv_content = "address,name,type\n10.0.0.1,new-server,ip"
+        resp = authed_client.post("/assets/import", data={"default_type": "ip"},
+            files={"file": ("test.csv", io.BytesIO(csv_content.encode()), "text/csv")})
+        assert resp.status_code == 200
+
+        asset = db_session.query(Asset).filter_by(name="new-server").first()
+        assert asset is not None
+        assert len(asset.addresses) == 1
+        assert asset.addresses[0].is_primary is True
+
+    def test_import_existing_name_adds_address(self, authed_client, db_session):
+        # Create existing asset with one address
+        asset = Asset(name="existing-server", type=AssetType.ip, address="10.0.0.1")
+        db_session.add(asset)
+        db_session.flush()
+        db_session.add(AssetAddress(asset_id=asset.id, address="10.0.0.1", is_primary=True))
+        db_session.commit()
+
+        csv_content = "address,name,type\n10.0.0.2,existing-server,ip"
+        resp = authed_client.post("/assets/import", data={"default_type": "ip"},
+            files={"file": ("test.csv", io.BytesIO(csv_content.encode()), "text/csv")})
+        assert resp.status_code == 200
+
+        db_session.refresh(asset)
+        assert len(asset.addresses) == 2
+        addrs = {a.address for a in asset.addresses}
+        assert addrs == {"10.0.0.1", "10.0.0.2"}
+
+    def test_import_existing_name_duplicate_address_skips(self, authed_client, db_session):
+        asset = Asset(name="dup-server", type=AssetType.ip, address="10.0.0.1")
+        db_session.add(asset)
+        db_session.flush()
+        db_session.add(AssetAddress(asset_id=asset.id, address="10.0.0.1", is_primary=True))
+        db_session.commit()
+
+        csv_content = "address,name,type\n10.0.0.1,dup-server,ip"
+        resp = authed_client.post("/assets/import", data={"default_type": "ip"},
+            files={"file": ("test.csv", io.BytesIO(csv_content.encode()), "text/csv")})
+        assert resp.status_code == 200
+
+        db_session.refresh(asset)
+        assert len(asset.addresses) == 1  # no duplicate
 
 
 class TestGroupDetailAddresses:
