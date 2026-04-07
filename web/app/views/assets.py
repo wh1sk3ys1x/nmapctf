@@ -86,6 +86,40 @@ def bulk_add_to_group(
     return RedirectResponse("/assets", status_code=303)
 
 
+@router.post("/{asset_id}/addresses", response_class=HTMLResponse)
+def add_address(
+    asset_id: int,
+    request: Request,
+    db: DbSession,
+    address: str = Form(...),
+    label: str = Form(""),
+):
+    if not can_edit(request):
+        return HTMLResponse("")
+    from app.main import templates
+    asset = db.get(Asset, asset_id)
+    if not asset:
+        return HTMLResponse("")
+    addr = AssetAddress(asset_id=asset_id, address=address, label=label or None, is_primary=False)
+    db.add(addr)
+    db.commit()
+    db.refresh(asset)
+    return templates.TemplateResponse(request, "assets/addresses_partial.html", {"asset": asset})
+
+
+@router.delete("/{asset_id}/addresses/{address_id}", response_class=HTMLResponse)
+def remove_address(asset_id: int, address_id: int, request: Request, db: DbSession):
+    if not can_edit(request):
+        return HTMLResponse("")
+    from app.main import templates
+    addr = db.get(AssetAddress, address_id)
+    if addr and addr.asset_id == asset_id and not addr.is_primary:
+        db.delete(addr)
+        db.commit()
+    asset = db.get(Asset, asset_id)
+    return templates.TemplateResponse(request, "assets/addresses_partial.html", {"asset": asset})
+
+
 @router.get("/{asset_id}/edit", response_class=HTMLResponse)
 def edit_asset(asset_id: int, request: Request, db: DbSession):
     if not can_edit(request):

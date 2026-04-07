@@ -1,0 +1,39 @@
+<div id="additional-addresses">
+  {% if asset and asset.addresses | length > 1 %}
+  <table class="table table-sm mb-2">
+    <thead><tr><th>Address</th><th>Label</th><th></th></tr></thead>
+    <tbody>
+      {% for addr in asset.addresses if not addr.is_primary %}
+      <tr>
+        <td><code>{{ addr.address }}</code></td>
+        <td>{{ addr.label or '' }}</td>
+        <td>
+          <button class="btn btn-sm btn-outline-danger"
+                  hx-delete="/assets/{{ asset.id }}/addresses/{{ addr.id }}"
+                  hx-target="#additional-addresses"
+                  hx-swap="outerHTML"
+                  hx-confirm="Remove address {{ addr.address }}?">Remove</button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  {% if asset %}
+  <form hx-post="/assets/{{ asset.id }}/addresses"
+        hx-target="#additional-addresses"
+        hx-swap="outerHTML"
+        class="d-flex gap-2 align-items-end">
+    <div>
+      <input type="text" class="form-control form-control-sm" name="address" placeholder="IP or hostname" required>
+    </div>
+    <div>
+      <input type="text" class="form-control form-control-sm" name="label" placeholder="Label (optional)">
+    </div>
+    <button type="submit" class="btn btn-sm btn-outline-primary">Add</button>
+  </form>
+  {% else %}
+  <p class="text-muted small">Save the asset first, then add additional addresses.</p>
+  {% endif %}
+</div>

@@ -24,6 +24,10 @@
            value="{{ asset.address if asset else '' }}">
   </div>
   <div class="mb-3">
+    <label class="form-label">Additional Addresses</label>
+    {% include "assets/addresses_partial.html" %}
+  </div>
+  <div class="mb-3">
     <label for="notes" class="form-label">Notes</label>
     <textarea class="form-control" id="notes" name="notes" rows="3">{{ asset.notes if asset and asset.notes else '' }}</textarea>
   </div>
