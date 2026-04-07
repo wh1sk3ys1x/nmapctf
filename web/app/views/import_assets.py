@@ -97,7 +97,7 @@ async def import_assets(
     if ext == "xlsx":
         entries = _parse_xlsx(content_bytes)
     elif ext == "csv":
-        entries = _parse_csv(content_bytes.decode("utf-8", errors="replace"))
+        entries = _parse_csv(content_bytes.decode("utf-8-sig", errors="replace"))
     elif ext == "txt":
         entries = _parse_txt(content_bytes.decode("utf-8", errors="replace"))
     else:
