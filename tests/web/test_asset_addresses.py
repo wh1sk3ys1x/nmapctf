@@ -367,6 +367,45 @@ class TestGroupDetailAddresses:
         assert "10.0.0.2" in resp.text
 
 
+class TestBackfill:
+    def test_backfill_creates_missing_addresses(self, db_session):
+        # Create asset without AssetAddress (simulating pre-migration data)
+        asset = Asset(name="legacy", type=AssetType.ip, address="172.16.0.1")
+        db_session.add(asset)
+        db_session.commit()
+
+        assert len(asset.addresses) == 0
+
+        # Run backfill logic inline (same logic as backfill script)
+        assets = db_session.query(Asset).all()
+        for a in assets:
+            if not a.addresses:
+                db_session.add(AssetAddress(asset_id=a.id, address=a.address, is_primary=True))
+        db_session.commit()
+
+        db_session.refresh(asset)
+        assert len(asset.addresses) == 1
+        assert asset.addresses[0].is_primary is True
+        assert asset.addresses[0].address == "172.16.0.1"
+
+    def test_backfill_skips_assets_with_addresses(self, db_session):
+        asset = Asset(name="modern", type=AssetType.ip, address="172.16.0.2")
+        db_session.add(asset)
+        db_session.flush()
+        db_session.add(AssetAddress(asset_id=asset.id, address="172.16.0.2", is_primary=True))
+        db_session.commit()
+
+        # Run backfill logic — should not add duplicate
+        assets = db_session.query(Asset).all()
+        for a in assets:
+            if not a.addresses:
+                db_session.add(AssetAddress(asset_id=a.id, address=a.address, is_primary=True))
+        db_session.commit()
+
+        db_session.refresh(asset)
+        assert len(asset.addresses) == 1
+
+
 class TestQuickTargetAddress:
     @pytest.fixture
     def profile(self, db_session):
