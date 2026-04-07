@@ -30,22 +30,39 @@ _PROGRESS_RE = re.compile(r"About (\d+(?:\.\d+)?)% done")
 _PHASE_RE = re.compile(r"Initiating (.+?) at \d")
 
 
+import time
+
 def _api_headers() -> dict:
     return {"Authorization": f"Bearer {SCANNER_API_TOKEN}"}
+
+
+def _api_request(method: str, url: str, **kwargs) -> httpx.Response:
+    """Make an HTTP request with retries for transient failures."""
+    kwargs.setdefault("timeout", 30)
+    kwargs.setdefault("headers", _api_headers())
+    for attempt in range(5):
+        try:
+            resp = getattr(httpx, method)(url, **kwargs)
+            resp.raise_for_status()
+            return resp
+        except (httpx.RemoteProtocolError, httpx.ReadError, httpx.ConnectError) as e:
+            if attempt == 4:
+                raise
+            wait = 2 ** attempt
+            logger.warning("API request failed (attempt %d/5), retrying in %ds: %s", attempt + 1, wait, e)
+            time.sleep(wait)
 
 
 def _update_job(job_id: str, payload: dict) -> None:
     """Post a status/results update back to the web API."""
     url = f"{WEB_API_URL}/internal/scans/{job_id}/results"
-    resp = httpx.put(url, json=payload, headers=_api_headers(), timeout=30)
-    resp.raise_for_status()
+    _api_request("put", url, json=payload)
 
 
 def _push_partial(job_id: str, results: list[dict]) -> None:
     """Push partial results (discovered ports) to the web API."""
     url = f"{WEB_API_URL}/internal/scans/{job_id}/partial"
-    resp = httpx.post(url, json={"results": results}, headers=_api_headers(), timeout=30)
-    resp.raise_for_status()
+    _api_request("post", url, json={"results": results})
 
 
 def _push_progress(job_id: str, progress: int, phase: str | None = None) -> None:
@@ -54,8 +71,7 @@ def _push_progress(job_id: str, progress: int, phase: str | None = None) -> None
     payload = {"progress": progress}
     if phase:
         payload["phase"] = phase
-    resp = httpx.post(url, json=payload, headers=_api_headers(), timeout=10)
-    resp.raise_for_status()
+    _api_request("post", url, json=payload, timeout=10)
 
 
 def _find_nmap() -> str:
