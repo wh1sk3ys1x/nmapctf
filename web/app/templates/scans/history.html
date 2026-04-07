@@ -25,6 +25,18 @@
   </div>
 </form>
 
+{% if can_edit %}
+{% set pending_count = scans | selectattr('status.value', 'in', ['pending', 'running']) | list | length %}
+{% if pending_count > 0 %}
+<form method="post" action="/scans/clear-pending" class="mb-3">
+  <button type="submit" class="btn btn-sm btn-outline-danger"
+          onclick="return confirm('Cancel all {{ pending_count }} pending/running scans and clear the queue?')">
+    Clear All Pending ({{ pending_count }})
+  </button>
+</form>
+{% endif %}
+{% endif %}
+
 <table class="table table-hover">
   <thead>
     <tr>

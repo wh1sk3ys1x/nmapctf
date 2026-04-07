@@ -142,6 +142,30 @@ def run_scan(
         return RedirectResponse("/scans", status_code=303)
 
 
+@router.post("/clear-pending", response_class=HTMLResponse)
+def clear_pending(request: Request, db: DbSession):
+    if not can_edit(request):
+        return RedirectResponse("/scans", status_code=303)
+    pending = org_filter(db.query(ScanJob), ScanJob, request).filter(
+        ScanJob.status.in_([ScanStatus.pending, ScanStatus.running])
+    ).all()
+    conn = Redis.from_url(settings.redis_url)
+    from rq.job import Job as RqJob
+    for scan in pending:
+        try:
+            rq_job = RqJob.fetch(scan.id, connection=conn)
+            rq_job.cancel()
+        except Exception:
+            pass
+        scan.status = ScanStatus.failed
+        scan.error_message = "Cancelled by user"
+    # Empty the queue of any remaining jobs
+    queue = _get_queue()
+    queue.empty()
+    db.commit()
+    return RedirectResponse("/scans", status_code=303)
+
+
 @router.post("/{scan_id}/cancel", response_class=HTMLResponse)
 def cancel_scan(scan_id: str, request: Request, db: DbSession):
     if not can_edit(request):
