@@ -99,31 +99,40 @@ def run_scan(
             return RedirectResponse("/scans/run", status_code=303)
         queue = _get_queue()
         for asset in group.assets:
-            job = ScanJob(asset_id=asset.id, profile_id=profile_id, asset_group_id=group.id, org_id=get_org_id(request))
-            db.add(job)
-            db.commit()
-            db.refresh(job)
-            queue.enqueue(
-                "tasks.run_scan",
-                job.id, asset.address, profile.nmap_args,
-                job_timeout="30m",
-            )
+            addresses = [a.address for a in asset.addresses] if asset.addresses else [asset.address]
+            for addr in addresses:
+                job = ScanJob(asset_id=asset.id, profile_id=profile_id, asset_group_id=group.id, org_id=get_org_id(request))
+                db.add(job)
+                db.commit()
+                db.refresh(job)
+                queue.enqueue(
+                    "tasks.run_scan",
+                    job.id, addr, profile.nmap_args,
+                    job_timeout="30m",
+                )
         return RedirectResponse("/scans", status_code=303)
     else:
         asset = db.get(Asset, asset_id)
         if not asset:
             return RedirectResponse("/scans/run", status_code=303)
-        job = ScanJob(asset_id=asset_id, profile_id=profile_id, org_id=get_org_id(request))
-        db.add(job)
-        db.commit()
-        db.refresh(job)
+        addresses = [a.address for a in asset.addresses] if asset.addresses else [asset.address]
         queue = _get_queue()
-        queue.enqueue(
-            "tasks.run_scan",
-            job.id, asset.address, profile.nmap_args,
-            job_timeout="30m",
-        )
-        return RedirectResponse(f"/scans/{job.id}", status_code=303)
+        first_job_id = None
+        for addr in addresses:
+            job = ScanJob(asset_id=asset_id, profile_id=profile_id, org_id=get_org_id(request))
+            db.add(job)
+            db.commit()
+            db.refresh(job)
+            if first_job_id is None:
+                first_job_id = job.id
+            queue.enqueue(
+                "tasks.run_scan",
+                job.id, addr, profile.nmap_args,
+                job_timeout="30m",
+            )
+        if len(addresses) == 1:
+            return RedirectResponse(f"/scans/{first_job_id}", status_code=303)
+        return RedirectResponse("/scans", status_code=303)
 
 
 @router.post("/{scan_id}/cancel", response_class=HTMLResponse)

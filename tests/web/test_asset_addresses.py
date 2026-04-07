@@ -219,6 +219,86 @@ class TestAssetListBadge:
         assert "+2" in resp.text
 
 
+class TestMultiAddressScan:
+    @pytest.fixture
+    def profile(self, db_session):
+        from app.models import ScanProfile
+        existing = db_session.query(ScanProfile).filter_by(name="Quick Scan").first()
+        if existing:
+            return existing
+        p = ScanProfile(name="Quick Scan", nmap_args="-T4 -F", is_default=False)
+        db_session.add(p)
+        db_session.commit()
+        db_session.refresh(p)
+        return p
+
+    @pytest.fixture
+    def multi_asset(self, db_session):
+        asset = Asset(name="multi-scan-target", type=AssetType.ip, address="10.0.0.1")
+        db_session.add(asset)
+        db_session.flush()
+        db_session.add(AssetAddress(asset_id=asset.id, address="10.0.0.1", is_primary=True))
+        db_session.add(AssetAddress(asset_id=asset.id, address="10.0.0.2", is_primary=False))
+        db_session.commit()
+        db_session.refresh(asset)
+        return asset
+
+    @patch("app.views.scans._get_queue")
+    def test_scan_single_address_asset(self, mock_queue, authed_client, db_session, profile):
+        from unittest.mock import MagicMock
+        mock_q = MagicMock()
+        mock_queue.return_value = mock_q
+
+        asset = Asset(name="single-target", type=AssetType.ip, address="10.0.0.1")
+        db_session.add(asset)
+        db_session.flush()
+        db_session.add(AssetAddress(asset_id=asset.id, address="10.0.0.1", is_primary=True))
+        db_session.commit()
+
+        resp = authed_client.post("/scans/run", data={
+            "asset_id": str(asset.id), "asset_group_id": "", "quick_target": "",
+            "profile_id": str(profile.id),
+        }, follow_redirects=False)
+        assert resp.status_code == 303
+        assert mock_q.enqueue.call_count == 1
+
+    @patch("app.views.scans._get_queue")
+    def test_scan_multi_address_creates_job_per_address(self, mock_queue, authed_client, db_session, profile, multi_asset):
+        from unittest.mock import MagicMock
+        mock_q = MagicMock()
+        mock_queue.return_value = mock_q
+
+        resp = authed_client.post("/scans/run", data={
+            "asset_id": str(multi_asset.id), "asset_group_id": "", "quick_target": "",
+            "profile_id": str(profile.id),
+        }, follow_redirects=False)
+        assert resp.status_code == 303
+        assert mock_q.enqueue.call_count == 2
+
+        from app.models import ScanJob
+        jobs = db_session.query(ScanJob).filter_by(asset_id=multi_asset.id).all()
+        assert len(jobs) == 2
+
+    @patch("app.views.scans._get_queue")
+    def test_group_scan_multi_address_creates_job_per_address(self, mock_queue, authed_client, db_session, profile, multi_asset):
+        from unittest.mock import MagicMock
+        mock_q = MagicMock()
+        mock_queue.return_value = mock_q
+
+        group = AssetGroup(name="scan-group")
+        db_session.add(group)
+        db_session.flush()
+        group.assets.append(multi_asset)
+        db_session.commit()
+
+        resp = authed_client.post("/scans/run", data={
+            "asset_id": "", "asset_group_id": str(group.id), "quick_target": "",
+            "profile_id": str(profile.id),
+        }, follow_redirects=False)
+        assert resp.status_code == 303
+        assert mock_q.enqueue.call_count == 2
+
+
 class TestGroupDetailAddresses:
     def test_group_detail_shows_all_addresses(self, authed_client, db_session):
         asset = Asset(name="grouped-server", type=AssetType.ip, address="10.0.0.1")
